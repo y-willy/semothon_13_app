@@ -16,6 +16,17 @@ venv\Scripts\activate.bat
 pip install -r requirments.txt
 ```
 
+.env.example 환경변수 설정
+
+1. MySQL랑 MySQL Workbench 깔아야합니다
+2. 그럼 MySQL Workbench가 편한 GUI버젼이라고 생각하시면 됩니다
+3. 여기서 New Connection 설정할때 .env.example넣을 값이 나옵니다
+4. Connection 맞춰주고 .env.example 에도 같은 값 넣으시면 됩니다.
+5. .env.example -> .env로 이름까지 바꿔주시면 됩니다.
+6. 그럼 DB 연결 완료...!
+7. 서버 가동하고 테스트해보시면 됩니다
+8. db연결 테스트 http://localhost:8000/db-check
+
 서버 가동
 
 ```
