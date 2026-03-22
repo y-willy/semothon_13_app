@@ -12,3 +12,10 @@ python -v venv venv
 ```
 pip install -r requirments.txt
 ```
+
+
+## 실행 방법 
+
+1. .env.example 참고해서 .env 생성
+2. MySQL 실행
+3. python 실행
