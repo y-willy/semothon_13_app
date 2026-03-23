@@ -1,4 +1,5 @@
 CREATE DATABASE semothon;
+USE semothon;
 
 CREATE TABLE users (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -78,32 +79,8 @@ CREATE TABLE tasks (
         ON DELETE CASCADE,
     CONSTRAINT fk_tasks_assigned_user
         FOREIGN KEY (assigned_user_id) REFERENCES users(id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_tasks_role
-        FOREIGN KEY (role_id) REFERENCES roles(id)
-        ON DELETE SET NULL
+        ON DELETE CASCADE
 );
-
-CREATE TABLE chat_messages (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    room_id BIGINT UNSIGNED NOT NULL,
-    sender_user_id BIGINT UNSIGNED NULL,
-    message_type ENUM('TEXT', 'IMAGE', 'FILE', 'SYSTEM', 'AI') NOT NULL DEFAULT 'TEXT',
-    content TEXT NULL,
-    image_url VARCHAR(500) NULL,
-    related_file_id BIGINT UNSIGNED NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_chat_messages_room
-        FOREIGN KEY (room_id) REFERENCES rooms(id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_chat_messages_sender
-        FOREIGN KEY (sender_user_id) REFERENCES users(id)
-        ON DELETE SET NULL,
-    CONSTRAINT fk_chat_messages_file
-        FOREIGN KEY (related_file_id) REFERENCES files(id)
-        ON DELETE SET NULL
-);
-
 CREATE TABLE files (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     room_id BIGINT UNSIGNED NOT NULL,
@@ -123,6 +100,27 @@ CREATE TABLE files (
         ON DELETE CASCADE,
     CONSTRAINT fk_files_task
         FOREIGN KEY (task_id) REFERENCES tasks(id)
+        ON DELETE SET NULL
+);
+
+
+CREATE TABLE chat_messages (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    room_id BIGINT UNSIGNED NOT NULL,
+    sender_user_id BIGINT UNSIGNED NULL,
+    message_type ENUM('TEXT', 'IMAGE', 'FILE', 'SYSTEM', 'AI') NOT NULL DEFAULT 'TEXT',
+    content TEXT NULL,
+    image_url VARCHAR(500) NULL,
+    related_file_id BIGINT UNSIGNED NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_chat_messages_room
+        FOREIGN KEY (room_id) REFERENCES rooms(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_chat_messages_sender
+        FOREIGN KEY (sender_user_id) REFERENCES users(id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_chat_messages_file
+        FOREIGN KEY (related_file_id) REFERENCES files(id)
         ON DELETE SET NULL
 );
 
