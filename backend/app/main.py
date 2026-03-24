@@ -2,6 +2,7 @@ from fastapi import FastAPI,APIRouter
 from app.database import test_db_connection
 from .schemas import DBCheckResponse
 from fastapi.middleware.cors import CORSMiddleware
+from app.routers.auth import router as auth_router
 
 app = FastAPI()
 
@@ -12,6 +13,9 @@ app.add_middleware(
     allow_methods=["*"],  # 모든 HTTP 메소드 허용
     allow_headers=["*"],  # 모든 헤더 허용
 )
+
+app.include_router(auth_router)
+
 
 @app.get("/")
 def root():
