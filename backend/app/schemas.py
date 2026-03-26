@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 
 
 class DBCheckResponse(BaseModel):
@@ -102,3 +102,39 @@ class ErrorResponse(BaseModel):
 class TokenPayload(BaseModel):
     sub: str
     exp: int
+    
+class ProfileUpdate(BaseModel):
+    
+    email: EmailStr | None = None
+    username: Optional[str] = None
+    display_name: str | None = Field(default=None, max_length=50)
+    mbti: str | None = Field(default=None, max_length=10)
+    major: str | None = Field(default=None, max_length=100)
+    personality_summary: str | None = None
+    profile_image_url: str | None = Field(default=None, max_length=255)
+
+    @field_validator("mbti")
+    @classmethod
+    def normalize_mbti(cls, value: str | None):
+        if value is None:
+            return None
+        value = value.strip().upper()
+        if value and len(value) != 4:
+            raise ValueError("MBTI는 4글자여야 합니다.")
+        return value
+
+
+class PublicProfileResponse(BaseModel):
+    id: int
+    username: str
+    display_name: str | None = None
+    mbti: str | None = None
+    major: str | None = None
+    personality_summary: str | None = None
+    profile_image_url: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MyProfileResponse(PublicProfileResponse):
+    email: EmailStr | None = None
