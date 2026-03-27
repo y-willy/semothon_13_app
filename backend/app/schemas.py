@@ -138,3 +138,28 @@ class PublicProfileResponse(BaseModel):
 
 class MyProfileResponse(PublicProfileResponse):
     email: EmailStr | None = None
+
+class FileResponse(BaseModel):
+    id: int
+    room_id: int
+    uploaded_by: int
+    task_id: Optional[int]
+    original_name: str
+    stored_name: str
+    file_url: str
+    mime_type: Optional[str]
+    file_size: Optional[int]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class FileDetailResponse(FileResponse):
+    object_key: str
+
+
+class FileDownloadResponse(BaseModel):
+    file_id: int
+    download_url: str
+    expires_in: int

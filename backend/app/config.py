@@ -9,6 +9,11 @@ class Settings(BaseSettings):
     DB_NAME: str = "testdb"
     SECRET_KEY: str
     
+    R2_ACCOUNT_ID: str
+    R2_ACCESS_KEY_ID: str
+    R2_SECRET_ACCESS_KEY: str
+    R2_BUCKET_NAME: str
+    R2_PUBLIC_BASE_URL: str
     class Config:
         env_file = ".env"
 

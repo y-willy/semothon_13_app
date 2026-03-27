@@ -2,6 +2,8 @@ annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.5.2
 bcrypt==4.0.1
+boto3==1.42.77
+botocore==1.42.77
 certifi==2026.2.25
 cffi==2.0.0
 click==8.1.8
@@ -22,6 +24,7 @@ httptools==0.6.4
 httpx==0.28.1
 idna==3.11
 Jinja2==3.1.6
+jmespath==1.1.0
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
 mdurl==0.1.2
@@ -33,6 +36,7 @@ pydantic-settings==2.8.1
 pydantic_core==2.27.2
 Pygments==2.19.2
 PyMySQL==1.1.2
+python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-jose==3.4.0
 python-multipart==0.0.20
@@ -41,6 +45,7 @@ rich==14.3.3
 rich-toolkit==0.19.7
 rignore==0.7.6
 rsa==4.9.1
+s3transfer==0.16.0
 sentry-sdk==2.55.0
 shellingham==1.5.4
 six==1.17.0
