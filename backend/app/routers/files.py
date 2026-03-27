@@ -129,28 +129,28 @@ def get_file_detail(
     return file_obj
 
 
-@router.get(
-    "/{file_id}/download",
-    summary="파일 다운로드",
-    description="권한 확인 후 Cloudflare R2 presigned 다운로드 URL로 리다이렉트합니다.",
-)
-def download_file(
-    file_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    file_obj = db.query(File).filter(File.id == file_id).first()
-    if not file_obj:
-        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다.")
+# @router.get(
+#     "/{file_id}/download",
+#     summary="파일 다운로드",
+#     description="권한 확인 후 Cloudflare R2 presigned 다운로드 URL로 리다이렉트합니다.",
+# )
+# def download_file(
+#     file_id: int,
+#     db: Session = Depends(get_db),
+#     current_user: User = Depends(get_current_user),
+# ):
+#     file_obj = db.query(File).filter(File.id == file_id).first()
+#     if not file_obj:
+#         raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다.")
 
-    _check_room_member(db, file_obj.room_id, current_user.id)
+#     _check_room_member(db, file_obj.room_id, current_user.id)
 
-    download_url = generate_download_url(
-        object_key=file_obj.object_key,
-        download_filename=file_obj.original_name,
-        expires_in=3600,
-    )
-    return RedirectResponse(url=download_url, status_code=307)
+#     download_url = generate_download_url(
+#         object_key=file_obj.object_key,
+#         download_filename=file_obj.original_name,
+#         expires_in=3600,
+#     )
+#     return RedirectResponse(url=download_url, status_code=307)
 
 
 @router.get(
@@ -184,25 +184,25 @@ def get_download_url(
     )
 
 
-@router.get(
-    "/{file_id}/view",
-    summary="파일 보기",
-    description="가능한 경우 inline으로 열 수 있는 presigned URL로 리다이렉트합니다.",
-)
-def view_file(
-    file_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    file_obj = db.query(File).filter(File.id == file_id).first()
-    if not file_obj:
-        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다.")
+# @router.get(
+#     "/{file_id}/view",
+#     summary="파일 보기",
+#     description="가능한 경우 inline으로 열 수 있는 presigned URL로 리다이렉트합니다.",
+# )
+# def view_file(
+#     file_id: int,
+#     db: Session = Depends(get_db),
+#     current_user: User = Depends(get_current_user),
+# ):
+#     file_obj = db.query(File).filter(File.id == file_id).first()
+#     if not file_obj:
+#         raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다.")
 
-    _check_room_member(db, file_obj.room_id, current_user.id)
+#     _check_room_member(db, file_obj.room_id, current_user.id)
 
-    view_url = generate_view_url(
-        object_key=file_obj.object_key,
-        inline_filename=file_obj.original_name,
-        expires_in=3600,
-    )
-    return RedirectResponse(url=view_url, status_code=307)
+#     view_url = generate_view_url(
+#         object_key=file_obj.object_key,
+#         inline_filename=file_obj.original_name,
+#         expires_in=3600,
+#     )
+#     return RedirectResponse(url=view_url, status_code=307)
