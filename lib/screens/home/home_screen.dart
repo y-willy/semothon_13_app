@@ -1,153 +1,327 @@
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final String userName;
+  HomeScreen({super.key, required this.userName});
+  static const Color primaryColor = Color(0xFFA31621);
+  static const Color bgColor = Color(0xFFF6F1F1);
+  static const Color cardColor = Colors.white;
+  static const Color subtitleColor = Color(0xFF7D6666);
+  static const Color borderColor = Color(0xFFE7C9C9);
+  static const Color softCardColor = Color(0xFFFCFBFB);
+  static const Color successBgColor = Color(0xFFDDF5E7);
+  static const Color successTextColor = Color(0xFF2E8B57);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F2F2),
-
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF7A0019),
-        elevation: 0,
-        title: const Text(
-          '쿠옹',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 380),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 24),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildTopSection(context),
+                    const SizedBox(height: 22),
+                    _buildIntroCard(),
+                    const SizedBox(height: 18),
+                    _buildActionButtons(),
+                    const SizedBox(height: 24),
+                    const Text(
+                      '✶ 내 팀플 목록',
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _buildTeamCard(),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
-      ),
-
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            /// 👋 인사
-            const Text(
-              '안녕하세요, 유나님 👋',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            /// 🐻 쿠옹 카드
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5EDEE),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.smart_toy, size: 40),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      '오늘 할 일이 있어요!\n회의 시간도 추천했어요 👀',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  )
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            /// 📌 팀 리스트 타이틀
-            const Text(
-              '내 팀',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            /// 📦 팀 카드 1
-            _teamCard(
-              title: '세모톤 프로젝트',
-              progress: 0.6,
-              dDay: 'D-3',
-            ),
-
-            const SizedBox(height: 12),
-
-            /// 📦 팀 카드 2
-            _teamCard(
-              title: '세계와 시민 팀플',
-              progress: 0.3,
-              dDay: 'D-7',
-            ),
-
-          ],
-        ),
-      ),
-
-      /// ➕ 플로팅 버튼 (팀 생성)
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF7A0019),
-        onPressed: () {},
-        child: const Icon(Icons.add),
       ),
     );
   }
 
-  /// 🔧 팀 카드 위젯
-  Widget _teamCard({
-    required String title,
-    required double progress,
-    required String dDay,
-  }) {
+  Widget _buildTopSection(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 66,
+          height: 66,
+          decoration: const BoxDecoration(
+            color: primaryColor,
+            shape: BoxShape.circle,
+          ),
+          child: const Center(
+            child: Text(
+              '* *\n▔',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${userName.isEmpty ? "사용자" : userName}님, 환영합니다!',
+                  style: TextStyle(
+                    color: Color(0xFF3A2A2A),
+                    fontSize: 28,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '오늘도 팀플을 시작해볼까요?',
+                  style: TextStyle(
+                    color: subtitleColor,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        OutlinedButton.icon(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(
+            Icons.logout,
+            size: 16,
+            color: subtitleColor,
+          ),
+          label: const Text(
+            '로그아웃',
+            style: TextStyle(
+              color: Color(0xFF5F4747),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: borderColor),
+            backgroundColor: const Color(0xFFFFFAFA),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIntroCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: softCardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFEAE1E1)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: const Text(
+        '안녕하세요! 저는 AI 팀장 쿠옹이에요.\n팀플을 시작하거나 기존 팀에 참여해보세요!',
+        style: TextStyle(
+          fontSize: 16,
+          color: Color(0xFF4B3A3A),
+          height: 1.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 56,
+            child: OutlinedButton.icon(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.add,
+                color: primaryColor,
+                size: 20,
+              ),
+              label: const Text(
+                '새 팀 생성하기',
+                style: TextStyle(
+                  color: Color(0xFF4B3A3A),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFFAFA),
+                side: const BorderSide(color: borderColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: SizedBox(
+            height: 56,
+            child: OutlinedButton.icon(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.groups_2_outlined,
+                color: primaryColor,
+                size: 18,
+              ),
+              label: const Text(
+                '팀 코드로 참여하기',
+                style: TextStyle(
+                  color: Color(0xFF4B3A3A),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFFAFA),
+                side: const BorderSide(color: borderColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTeamCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      decoration: BoxDecoration(
+        color: softCardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              const Expanded(
+                child: Text(
+                  '캡스톤 디자인 A팀',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF3A2A2A),
+                  ),
                 ),
               ),
-              Text(
-                dDay,
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
                 ),
-              )
+                decoration: BoxDecoration(
+                  color: successBgColor,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  '협업 진행 중',
+                  style: TextStyle(
+                    color: successTextColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ],
           ),
-
-          const SizedBox(height: 10),
-
-          /// 진행률 바
-          LinearProgressIndicator(
-            value: progress,
-            backgroundColor: Colors.grey[200],
-            color: const Color(0xFF7A0019),
-            minHeight: 6,
+          const SizedBox(height: 8),
+          const Text(
+            '팀 코드 : KHU2024',
+            style: TextStyle(
+              fontSize: 14,
+              color: subtitleColor,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-
-          const SizedBox(height: 6),
-
-          Text('${(progress * 100).toInt()}% 진행 중'),
+          const SizedBox(height: 18),
+          const Row(
+            children: [
+              Icon(
+                Icons.groups_outlined,
+                size: 18,
+                color: subtitleColor,
+              ),
+              SizedBox(width: 6),
+              Text(
+                '4명',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF5F4747),
+                ),
+              ),
+              SizedBox(width: 18),
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 16,
+                color: subtitleColor,
+              ),
+              SizedBox(width: 6),
+              Text(
+                '생성일: 2024-03-15',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF5F4747),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'signup_screen.dart';
+import '../home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,18 +27,24 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void onLoginPressed() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('다음 단계에서 실제 로그인 API를 연결할게요.'),
-      ),
-    );
-  }
+void onLoginPressed() {
+  // 실제 앱이라면 여기서 아이디/비밀번호 검증 로직이 들어갑니다.
+  // 검증 성공 후 홈 화면으로 이동:
+Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(
+    builder: (_) => HomeScreen(
+      userName: emailController.text.split('@')[0], // 임시
+    ),
+  ),
+);
+}
 
   void onSignupPressed() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('다음 단계에서 회원가입 화면으로 연결할게요.'),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SignupScreen(),
       ),
     );
   }
@@ -64,54 +72,49 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: Column(
                       children: [
-                        // ✅ 이 섹션에서 이미지 위치와 간격을 조정했습니다.
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                         // 1. 이미지를 우측으로 40만큼 밀어냄
-                          Transform.translate(
-                            offset: const Offset(40, 0), // 👈 첫 번째 숫자가 클수록 더 오른쪽으로 갑니다.
-                            child: Image.asset(
-                              'assets/images/mainlogo.png',
-                              width: 320, // 👈 요청하신 크기 유지
-                              fit: BoxFit.contain,
+                          children: [
+                            Transform.translate(
+                              offset: const Offset(0, 0),
+                              child: Image.asset(
+                                'assets/images/mainlogo.png',
+                                width: 320,
+                                fit: BoxFit.contain,
+                              ),
                             ),
-                          ), // 이미지와 설명 사이의 간격을 대폭 줄임
-                            
-                            // 2. 텍스트는 그대로 중앙 유지
-Transform.translate(
-      offset: const Offset(0, -10), // 👈 -20만큼 위로 끌어올립니다. 더 올리고 싶으면 -30 등으로 조정하세요.
-      child: Column(
-        children: [
-          const Text(
-            '에코 (ai-coach)',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: primaryColor,
-              fontSize: 22,
-              fontWeight: FontWeight.w500,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            '어색한 첫 만남부터 협업 완료까지\n팀플을 설계하는 AI 서비스',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: subtitleColor,
-              fontSize: 14,
-              height: 1.45,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ],
-      ),
-    ),
-  ],
-),
+                            Transform.translate(
+                              offset: const Offset(0, -10),
+                              child: Column(
+                                children: const [
+                                  Text(
+                                    '에코 (ai-coach)',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: primaryColor,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    '어색한 첫 만남부터 협업 완료까지\n팀플을 설계하는 AI 서비스',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: subtitleColor,
+                                      fontSize: 14,
+                                      height: 1.45,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 26),
-
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
@@ -286,8 +289,8 @@ Transform.translate(
                                       color: primaryColor,
                                       size: 24,
                                     ),
-                                    const SizedBox(height: 8),
-                                    const Text(
+                                    SizedBox(height: 8),
+                                    Text(
                                       'AI 팀장 쿠옹',
                                       style: TextStyle(
                                         fontSize: 13,
@@ -315,8 +318,8 @@ Transform.translate(
                                       color: primaryColor,
                                       size: 24,
                                     ),
-                                    const SizedBox(height: 8),
-                                    const Text(
+                                    SizedBox(height: 8),
+                                    Text(
                                       '스마트 협업',
                                       style: TextStyle(
                                         fontSize: 13,
