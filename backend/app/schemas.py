@@ -139,6 +139,7 @@ class PublicProfileResponse(BaseModel):
 class MyProfileResponse(PublicProfileResponse):
     email: EmailStr | None = None
 
+
 class FileResponse(BaseModel):
     id: int
     room_id: int
@@ -154,10 +155,27 @@ class FileResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class FileDetailResponse(BaseModel):
+    id: int
+    room_id: int
 
-class FileDetailResponse(FileResponse):
+    task_id: Optional[int]
+    task_title: Optional[str]
+
+    uploaded_by: int
+    uploaded_by_name: str
+
+    original_name: str
+    stored_name: str
     object_key: str
 
+    mime_type: Optional[str]
+    file_size: Optional[int]
+
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class FileDownloadResponse(BaseModel):
     file_id: int

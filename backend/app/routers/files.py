@@ -14,10 +14,11 @@ from fastapi import (
 )
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import File, Room, RoomMember, Task, User
+from app.models import File, Room, RoomMember, Task, User, UserProfile
 from app.schemas import FileResponse, FileDetailResponse, FileDownloadResponse
 from app.services.r2 import upload_bytes, generate_download_url, generate_view_url
 
@@ -121,12 +122,40 @@ def get_file_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    file_obj = db.query(File).filter(File.id == file_id).first()
-    if not file_obj:
+    result = (
+        db.query(
+            File,
+            Task.title.label("task_title"),
+            func.coalesce(UserProfile.display_name, User.username).label("uploaded_by_name"),
+        )
+        .join(User, File.uploaded_by == User.id)
+        .outerjoin(UserProfile, UserProfile.user_id == User.id)
+        .outerjoin(Task, File.task_id == Task.id)
+        .filter(File.id == file_id)
+        .first()
+    )
+
+    if not result:
         raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다.")
 
+    file_obj, task_title, uploaded_by_name = result
+
     _check_room_member(db, file_obj.room_id, current_user.id)
-    return file_obj
+
+    return {
+        "id": file_obj.id,
+        "room_id": file_obj.room_id,
+        "task_id": file_obj.task_id,
+        "task_title": task_title,
+        "uploaded_by": file_obj.uploaded_by,
+        "uploaded_by_name": uploaded_by_name,
+        "original_name": file_obj.original_name,
+        "stored_name": file_obj.stored_name,
+        "object_key": file_obj.object_key,
+        "mime_type": file_obj.mime_type,
+        "file_size": file_obj.file_size,
+        "created_at": file_obj.created_at,
+    }
 
 
 # @router.get(
