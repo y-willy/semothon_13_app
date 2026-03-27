@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'signup_screen.dart';
 import '../home/home_screen.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,17 +29,56 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-void onLoginPressed() {
-  // 실제 앱이라면 여기서 아이디/비밀번호 검증 로직이 들어갑니다.
-  // 검증 성공 후 홈 화면으로 이동:
-Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(
-    builder: (_) => HomeScreen(
-      userName: emailController.text.split('@')[0], // 임시
-    ),
-  ),
-);
+void onLoginPressed() async {
+  final Uri url = Uri.parse(
+    'https://semothon13app-production.up.railway.app/auth/login',
+  );
+
+  try {
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        "email": emailController.text.trim(),
+        "password": passwordController.text.trim(),
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HomeScreen(
+            userName: data['display_name'] ??
+                data['username'] ??
+                emailController.text.split('@')[0],
+          ),
+        ),
+      );
+    } else {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            data['detail']?.toString() ?? '로그인 실패',
+          ),
+        ),
+      );
+    }
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('서버 연결 실패: $e')),
+    );
+  }
 }
 
   void onSignupPressed() {
