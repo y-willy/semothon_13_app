@@ -16,16 +16,14 @@ class RoleModel {
   });
 
   factory RoleModel.fromJson(Map<String, dynamic> json) {
-    final taskList = (json['tasks'] as List<dynamic>? ?? [])
-        .map((e) => TaskModel.fromJson(e as Map<String, dynamic>))
-        .toList();
-
     return RoleModel(
-      id: json['id'] as int,
-      title: json['title'] as String,
-      assignee: json['assignee'] as String,
-      status: json['status'] as String,
-      tasks: taskList,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      title: json['title'] as String? ?? '',
+      assignee: json['assignee'] as String? ?? '',
+      status: json['status'] as String? ?? '시작 전',
+      tasks: (json['tasks'] as List<dynamic>? ?? [])
+          .map((e) => TaskModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 

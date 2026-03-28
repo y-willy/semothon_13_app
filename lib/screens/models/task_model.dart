@@ -17,12 +17,13 @@ class TaskModel {
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
     return TaskModel(
-      id: json['id'] as int,
-      title: json['title'] as String,
-      priority: json['priority'] as String,
-      dueDate: DateTime.parse(json['dueDate'] as String),
-      done: json['done'] as bool,
-      source: json['source'] as String,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      title: json['title'] as String? ?? '',
+      priority: json['priority'] as String? ?? '보통',
+      dueDate:
+          DateTime.tryParse(json['dueDate'] as String? ?? '') ?? DateTime.now(),
+      done: json['done'] as bool? ?? false,
+      source: json['source'] as String? ?? '수동',
     );
   }
 

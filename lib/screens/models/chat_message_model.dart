@@ -13,7 +13,7 @@ class ChatMessageModel {
     required this.sender,
     required this.time,
     required this.message,
-    this.roleTag,
+    required this.roleTag,
     required this.isAi,
     required this.isFile,
     required this.isRead,
@@ -21,14 +21,14 @@ class ChatMessageModel {
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
     return ChatMessageModel(
-      id: json['id'] as int,
-      sender: json['sender'] as String,
-      time: json['time'] as String,
-      message: json['message'] as String,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      sender: json['sender'] as String? ?? '',
+      time: json['time'] as String? ?? '',
+      message: json['message'] as String? ?? '',
       roleTag: json['roleTag'] as String?,
-      isAi: json['isAi'] as bool,
-      isFile: json['isFile'] as bool,
-      isRead: json['isRead'] as bool,
+      isAi: json['isAi'] as bool? ?? false,
+      isFile: json['isFile'] as bool? ?? false,
+      isRead: json['isRead'] as bool? ?? false,
     );
   }
 

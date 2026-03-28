@@ -17,11 +17,11 @@ class ScheduleModel {
 
   factory ScheduleModel.fromJson(Map<String, dynamic> json) {
     return ScheduleModel(
-      id: json['id'] as int,
-      title: json['title'] as String,
-      date: DateTime.parse(json['date'] as String),
-      startTime: _parseTime(json['startTime'] as String),
-      endTime: _parseTime(json['endTime'] as String),
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      title: json['title'] as String? ?? '',
+      date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
+      startTime: _timeOfDayFromString(json['startTime'] as String? ?? '00:00'),
+      endTime: _timeOfDayFromString(json['endTime'] as String? ?? '00:00'),
     );
   }
 
@@ -51,12 +51,16 @@ class ScheduleModel {
     );
   }
 
-  static TimeOfDay _parseTime(String value) {
+  static TimeOfDay _timeOfDayFromString(String value) {
     final parts = value.split(':');
-    return TimeOfDay(
-      hour: int.parse(parts[0]),
-      minute: int.parse(parts[1]),
-    );
+    if (parts.length != 2) {
+      return const TimeOfDay(hour: 0, minute: 0);
+    }
+
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts[1]) ?? 0;
+
+    return TimeOfDay(hour: hour, minute: minute);
   }
 
   static String _timeOfDayToString(TimeOfDay time) {

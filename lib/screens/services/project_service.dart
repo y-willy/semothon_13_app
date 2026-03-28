@@ -17,16 +17,24 @@ class ProjectService {
         'Content-Type': 'application/json',
       };
 
+  // =========================
+  // 🔥 프로젝트 상세 조회
+  // =========================
   Future<ProjectDetailModel> fetchProjectDetail(String projectNumber) async {
     final response = await client.get(
       Uri.parse('$baseUrl/projects/$projectNumber'),
       headers: _headers,
     );
 
-    _throwIfFailed(response, '프로젝트 상세 조회 실패');
+    _throwIfFailed(response, '프로젝트 조회 실패');
+
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     return ProjectDetailModel.fromJson(data);
   }
+
+  // =========================
+  // 👥 팀원
+  // =========================
 
   Future<void> createMember({
     required String projectNumber,
@@ -75,6 +83,10 @@ class ProjectService {
     _throwIfFailed(response, '팀원 삭제 실패', allow204: true);
   }
 
+  // =========================
+  // 📅 일정
+  // =========================
+
   Future<void> createSchedule({
     required String projectNumber,
     required String title,
@@ -88,8 +100,8 @@ class ProjectService {
       body: jsonEncode({
         'title': title,
         'date': _dateOnly(date),
-        'startTime': _timeOfDayToString(startTime),
-        'endTime': _timeOfDayToString(endTime),
+        'startTime': _timeToString(startTime),
+        'endTime': _timeToString(endTime),
       }),
     );
 
@@ -110,8 +122,8 @@ class ProjectService {
       body: jsonEncode({
         'title': title,
         'date': _dateOnly(date),
-        'startTime': _timeOfDayToString(startTime),
-        'endTime': _timeOfDayToString(endTime),
+        'startTime': _timeToString(startTime),
+        'endTime': _timeToString(endTime),
       }),
     );
 
@@ -129,6 +141,10 @@ class ProjectService {
 
     _throwIfFailed(response, '일정 삭제 실패', allow204: true);
   }
+
+  // =========================
+  // 🧠 역할 / 업무
+  // =========================
 
   Future<void> createTask({
     required String projectNumber,
@@ -152,38 +168,23 @@ class ProjectService {
     _throwIfFailed(response, '업무 추가 실패', allow201: true);
   }
 
-  Future<void> updateTaskDeadline({
+  Future<void> updateTask({
     required String projectNumber,
     required int roleId,
     required int taskId,
     required DateTime dueDate,
-  }) async {
-    final response = await client.patch(
-      Uri.parse('$baseUrl/projects/$projectNumber/roles/$roleId/tasks/$taskId'),
-      headers: _headers,
-      body: jsonEncode({
-        'dueDate': dueDate.toIso8601String(),
-      }),
-    );
-
-    _throwIfFailed(response, '업무 마감일 수정 실패');
-  }
-
-  Future<void> toggleTaskDone({
-    required String projectNumber,
-    required int roleId,
-    required int taskId,
     required bool done,
   }) async {
     final response = await client.patch(
       Uri.parse('$baseUrl/projects/$projectNumber/roles/$roleId/tasks/$taskId'),
       headers: _headers,
       body: jsonEncode({
+        'dueDate': dueDate.toIso8601String(),
         'done': done,
       }),
     );
 
-    _throwIfFailed(response, '업무 상태 변경 실패');
+    _throwIfFailed(response, '업무 수정 실패');
   }
 
   Future<void> deleteTask({
@@ -199,7 +200,11 @@ class ProjectService {
     _throwIfFailed(response, '업무 삭제 실패', allow204: true);
   }
 
-  Future<void> createChatMessage({
+  // =========================
+  // 💬 채팅
+  // =========================
+
+  Future<void> sendChat({
     required String projectNumber,
     required String message,
     required bool isFile,
@@ -216,23 +221,31 @@ class ProjectService {
     _throwIfFailed(response, '채팅 전송 실패', allow201: true);
   }
 
-  Future<void> markAllNotificationsRead(String projectNumber) async {
+  // =========================
+  // 🔔 읽음 처리
+  // =========================
+
+  Future<void> readAllNotifications(String projectNumber) async {
     final response = await client.patch(
       Uri.parse('$baseUrl/projects/$projectNumber/notifications/read-all'),
       headers: _headers,
     );
 
-    _throwIfFailed(response, '알림 읽음 처리 실패');
+    _throwIfFailed(response, '알림 읽음 실패');
   }
 
-  Future<void> markAllChatRead(String projectNumber) async {
+  Future<void> readAllChat(String projectNumber) async {
     final response = await client.patch(
       Uri.parse('$baseUrl/projects/$projectNumber/chat-messages/read-all'),
       headers: _headers,
     );
 
-    _throwIfFailed(response, '채팅 읽음 처리 실패');
+    _throwIfFailed(response, '채팅 읽음 실패');
   }
+
+  // =========================
+  // 🔥 공통 에러 처리
+  // =========================
 
   void _throwIfFailed(
     http.Response response,
@@ -249,16 +262,18 @@ class ProjectService {
     }
   }
 
+  // =========================
+  // 🛠 유틸
+  // =========================
+
   static String _dateOnly(DateTime date) {
-    final y = date.year.toString().padLeft(4, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
+    return "${date.year.toString().padLeft(4, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.day.toString().padLeft(2, '0')}";
   }
 
-  static String _timeOfDayToString(TimeOfDay time) {
-    final h = time.hour.toString().padLeft(2, '0');
-    final m = time.minute.toString().padLeft(2, '0');
-    return '$h:$m';
+  static String _timeToString(TimeOfDay time) {
+    return "${time.hour.toString().padLeft(2, '0')}:"
+        "${time.minute.toString().padLeft(2, '0')}";
   }
 }
