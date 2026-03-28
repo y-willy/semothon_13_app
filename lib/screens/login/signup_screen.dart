@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -29,130 +30,137 @@ class _SignupScreenState extends State<SignupScreen> {
     passwordController.dispose();
     super.dispose();
   }
+void onSignupSubmit() async {
+  final Uri url = Uri.parse(
+    'https://semothon13app-production.up.railway.app/auth/signup',
+  );
 
-  void onSignupSubmit() async {
-    final Uri url = Uri.parse(
-      'https://semothon13app-production.up.railway.app/auth/signup',
+  try {
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        "username": nameController.text.trim(),
+        "email": emailController.text.trim(),
+        "password": passwordController.text.trim(),
+        "display_name": nameController.text.trim(),
+        "major": majorController.text.trim(),
+      }),
     );
 
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (!mounted) return;
+
+      final bool? goBackToLogin = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black.withOpacity(0.35),
+        builder: (dialogContext) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 28,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/images/happykhuong.png',
+                    width: 90,
+                    height: 90,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '회원가입 성공!',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF3A2A2A),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    data['message'] ?? '회원가입이 완료되었습니다.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF7D6666),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop(true);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        '확인',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         },
-        body: jsonEncode({
-          "username": nameController.text.trim(),
-          "email": emailController.text.trim(),
-          "password": passwordController.text.trim(),
-          "display_name": nameController.text.trim(),
-          "major": majorController.text.trim(),
-        }),
       );
 
-      final data = jsonDecode(response.body);
+      if (!mounted) return;
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        if (!mounted) return;
-
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          barrierColor: Colors.black.withOpacity(0.35),
-          builder: (context) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 28,
-                ),
-child: Column(
-        mainAxisSize: MainAxisSize.min, // [중요] 이 줄을 추가하면 창이 내용만큼 딱 줄어듭니다!
-        children: [
-          Image.asset(
-            'assets/images/happykhuong.png',
-                      width: 90,
-                      height: 90,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      '회원가입 성공!',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF3A2A2A),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      data['message'] ?? '회원가입이 완료되었습니다.',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF7D6666),
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          backgroundColor: primaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: const Text(
-                          '확인',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-
-        if (!mounted) return;
-        Navigator.pop(context);
-      } else {
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              data['detail']?.toString() ??
-                  data['message'] ??
-                  '회원가입 실패',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
+      if (goBackToLogin == true) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+        ),
+        (route) => false,
+      );
+    }
+    } else {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('서버 연결 실패: $e')),
+        SnackBar(
+          content: Text(
+            data['detail']?.toString() ??
+                data['message'] ??
+                '회원가입 실패',
+          ),
+        ),
       );
     }
-  }
+  } catch (e) {
+    if (!mounted) return;
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('서버 연결 실패: $e')),
+    );
+  }
+}
+  
   InputDecoration _inputDecoration(String hintText) {
     return InputDecoration(
       hintText: hintText,
