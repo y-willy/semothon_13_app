@@ -12,7 +12,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController emailController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   static const Color primaryColor = Color(0xFFA31621);
@@ -24,62 +24,64 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    emailController.dispose();
+    usernameController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
-void onLoginPressed() async {
-  final Uri url = Uri.parse(
-    'https://semothon13app-production.up.railway.app/auth/login',
-  );
-
-  try {
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        "email": emailController.text.trim(),
-        "password": passwordController.text.trim(),
-      }),
+  void onLoginPressed() async {
+    final Uri url = Uri.parse(
+      'https://semothon13app-production.up.railway.app/auth/login',
     );
 
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      if (!mounted) return;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => HomeScreen(
-            userName: data['display_name'] ??
-                data['username'] ??
-                emailController.text.split('@')[0],
-          ),
-        ),
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          "username": usernameController.text.trim(),
+          "password": passwordController.text.trim(),
+        }),
       );
-    } else {
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HomeScreen(
+              userName: data['display_name'] ??
+                  data['username'] ??
+                  usernameController.text.trim(),
+            ),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              data['detail']?.toString() ??
+                  data['message']?.toString() ??
+                  '로그인 실패',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            data['detail']?.toString() ?? '로그인 실패',
-          ),
-        ),
+        SnackBar(content: Text('서버 연결 실패: $e')),
       );
     }
-  } catch (e) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('서버 연결 실패: $e')),
-    );
   }
-}
 
   void onSignupPressed() {
     Navigator.push(
@@ -177,7 +179,7 @@ void onLoginPressed() async {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                '이메일',
+                                '이름',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -186,10 +188,9 @@ void onLoginPressed() async {
                               ),
                               const SizedBox(height: 8),
                               TextField(
-                                controller: emailController,
-                                keyboardType: TextInputType.emailAddress,
+                                controller: usernameController,
                                 decoration: InputDecoration(
-                                  hintText: 'example@khu.ac.kr',
+                                  hintText: '이름을 입력하세요',
                                   hintStyle: const TextStyle(
                                     color: Color(0xFFA58787),
                                     fontSize: 14,
