@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 
@@ -181,3 +181,74 @@ class FileDownloadResponse(BaseModel):
     file_id: int
     download_url: str
     expires_in: int
+
+
+class RoomCreateRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255, description="룸 제목")
+    description: Optional[str] = Field(None, max_length=500, description="룸 설명")
+    max_members: int = Field(default=10, ge=1, le=100, description="최대 인원")
+
+
+class RoomUserAddRequest(BaseModel):
+    user_id: int = Field(..., description="추가할 사용자 ID")
+    role_in_room: str = Field(default="MEMBER", description="HOST 또는 MEMBER")
+
+
+class RoomMemberItem(BaseModel):
+    user_id: int
+    username: str
+    display_name: Optional[str] = None
+    role_in_room: str
+    join_status: str
+    joined_at: datetime
+
+
+class RoomCreateResponse(BaseModel):
+    id: int
+    host_user_id: int
+    title: str
+    description: Optional[str] = None
+    invite_code: str
+    max_members: int
+    status: str
+    current_stage: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class RoomDetailResponse(BaseModel):
+    id: int
+    host_user_id: int
+    host_name: str
+    title: str
+    description: Optional[str] = None
+    invite_code: str
+    max_members: int
+    status: str
+    current_stage: str
+    created_at: datetime
+    members: List[RoomMemberItem]
+
+
+class RoomListItemResponse(BaseModel):
+    id: int
+    host_user_id: int
+    host_name: str
+    title: str
+    description: Optional[str] = None
+    invite_code: str
+    max_members: int
+    member_count: int
+    status: str
+    current_stage: str
+    created_at: datetime
+
+
+class RoomUserAddResponse(BaseModel):
+    room_id: int
+    user_id: int
+    role_in_room: str
+    join_status: str
+    joined_at: datetime

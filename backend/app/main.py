@@ -2,9 +2,8 @@ from fastapi import FastAPI,APIRouter
 from app.database import test_db_connection
 from .schemas import DBCheckResponse
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers.auth import router as auth_router
-from app.routers.profile import router as profile_router
-from app.routers.files import router as files_router
+
+from app.routers import auth, files, rooms, profile
 
 app = FastAPI()
 
@@ -16,9 +15,10 @@ app.add_middleware(
     allow_headers=["*"],  # 모든 헤더 허용
 )
 
-app.include_router(auth_router)
-app.include_router(profile_router)
-app.include_router(files_router)
+app.include_router(auth.router)
+app.include_router(files.router)
+app.include_router(rooms.router)
+app.include_router(profile.router)
 
 
 @app.get("/")
