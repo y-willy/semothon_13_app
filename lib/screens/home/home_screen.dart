@@ -60,45 +60,44 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildTopSection(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // ⭐ 수정된 이미지 영역 (왼쪽 정렬)
         Container(
-          width: 66,
-          height: 66,
-          decoration: const BoxDecoration(
-            color: primaryColor,
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: Colors.white, // 원형 배경색 (필요시 primaryColor로 변경)
             shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFE0E0E0), width: 1.5),
           ),
-          child: const Center(
-            child: Text(
-              '* *\n▔',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                height: 1.3,
-              ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/face.png',
+              width: 30,
+              height: 30,
+              fit: BoxFit.cover,
             ),
           ),
         ),
         const SizedBox(width: 14),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.only(top: 2),
+            padding: const EdgeInsets.only(top: 2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '${userName.isEmpty ? "사용자" : userName}님, 환영합니다!',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Color(0xFF3A2A2A),
                     fontSize: 28,
                     fontWeight: FontWeight.w600,
                     height: 1.2,
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
+                const SizedBox(height: 4),
+                const Text(
                   '오늘도 팀플을 시작해볼까요?',
                   style: TextStyle(
                     color: subtitleColor,
