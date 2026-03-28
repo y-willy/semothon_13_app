@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../login/login_screen.dart';
+import 'project_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final String userName;
   HomeScreen({super.key, required this.userName});
+
   static const Color primaryColor = Color(0xFFA31621);
   static const Color bgColor = Color(0xFFF6F1F1);
   static const Color cardColor = Colors.white;
@@ -39,7 +42,7 @@ class HomeScreen extends StatelessWidget {
                     _buildActionButtons(),
                     const SizedBox(height: 24),
                     const Text(
-                      '✶ 내 팀플 목록',
+                      '✶ 내 프로젝트 바로가기',
                       style: TextStyle(
                         color: primaryColor,
                         fontSize: 24,
@@ -47,7 +50,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    _buildTeamCard(),
+                    _buildProjectShortcutCard(context),
                   ],
                 ),
               ),
@@ -62,20 +65,17 @@ class HomeScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // ⭐ 수정된 이미지 영역 (왼쪽 정렬)
         Container(
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: Colors.white, // 원형 배경색 (필요시 primaryColor로 변경)
+            color: Colors.white,
             shape: BoxShape.circle,
             border: Border.all(color: const Color(0xFFE0E0E0), width: 1.5),
           ),
           child: ClipOval(
             child: Image.asset(
               'assets/images/face.png',
-              width: 30,
-              height: 30,
               fit: BoxFit.cover,
             ),
           ),
@@ -111,7 +111,13 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(width: 8),
         OutlinedButton.icon(
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const LoginScreen(),
+              ),
+              (route) => false,
+            );
           },
           icon: const Icon(
             Icons.logout,
@@ -229,99 +235,105 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTeamCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-      decoration: BoxDecoration(
-        color: softCardColor,
+  Widget _buildProjectShortcutCard(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: borderColor),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  '캡스톤 디자인 A팀',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF3A2A2A),
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: successBgColor,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: const Text(
-                  '협업 진행 중',
-                  style: TextStyle(
-                    color: successTextColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '팀 코드 : KHU2024',
-            style: TextStyle(
-              fontSize: 14,
-              color: subtitleColor,
-              fontWeight: FontWeight.w500,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ProjectListScreen(),
             ),
-          ),
-          const SizedBox(height: 18),
-          const Row(
-            children: [
-              Icon(
-                Icons.groups_outlined,
-                size: 18,
-                color: subtitleColor,
-              ),
-              SizedBox(width: 6),
-              Text(
-                '4명',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF5F4747),
-                ),
-              ),
-              SizedBox(width: 18),
-              Icon(
-                Icons.calendar_today_outlined,
-                size: 16,
-                color: subtitleColor,
-              ),
-              SizedBox(width: 6),
-              Text(
-                '생성일: 2024-03-15',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF5F4747),
-                ),
+          );
+        },
+        child: Ink(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+          decoration: BoxDecoration(
+            color: softCardColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: borderColor),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0D000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
               ),
             ],
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      '내 프로젝트 보러가기',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF3A2A2A),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: successBgColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Text(
+                      '바로가기',
+                      style: TextStyle(
+                        color: successTextColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '현재 진행 중인 프로젝트 목록을 확인해보세요',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: subtitleColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Row(
+                children: [
+                  Icon(
+                    Icons.folder_open_outlined,
+                    size: 18,
+                    color: subtitleColor,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    '프로젝트 화면으로 이동',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF5F4747),
+                    ),
+                  ),
+                  Spacer(),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                    color: subtitleColor,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

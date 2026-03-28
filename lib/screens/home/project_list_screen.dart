@@ -9,11 +9,14 @@ class ProjectListScreen extends StatefulWidget {
 }
 
 class _ProjectListScreenState extends State<ProjectListScreen> {
-  static const Color kWine = Color(0xFF8E1F39);
-  static const Color kCream = Color(0xFFF4EFEC);
-  static const Color kCard = Color(0xFFFFFCFA);
-  static const Color kText = Color(0xFF1F1A1C);
-  static const Color kSub = Color(0xFF8B8480);
+  static const Color kWine = Color(0xFFA31621);
+  static const Color kCream = Color(0xFFF6F1F1);
+  static const Color kCard = Colors.white;
+  static const Color kText = Color(0xFF3A2A2A);
+  static const Color kSub = Color(0xFF7D6666);
+  static const Color kBorder = Color(0xFFE7C9C9);
+  static const Color kSoftCard = Color(0xFFFCFBFB);
+  static const Color kInputFill = Color(0xFFF9F1F1);
 
   late List<_ProjectCardData> projects = [
     _ProjectCardData(
@@ -65,14 +68,11 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
         return StatefulBuilder(
           builder: (context, setInnerState) {
             return Dialog(
-              backgroundColor: Colors.transparent,
-              insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(22),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -82,7 +82,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                         '새 프로젝트 추가',
                         style: TextStyle(
                           fontSize: 24,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           color: kText,
                         ),
                       ),
@@ -117,17 +117,17 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(52),
-                              side: const BorderSide(color: Color(0xFFE4D9D4)),
+                              minimumSize: const Size.fromHeight(48),
+                              side: const BorderSide(color: kBorder),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             child: const Text(
                               '취소',
                               style: TextStyle(
                                 color: kSub,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -161,14 +161,14 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                               backgroundColor: kWine,
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              minimumSize: const Size.fromHeight(52),
+                              minimumSize: const Size.fromHeight(48),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             child: const Text(
                               '추가',
-                              style: TextStyle(fontWeight: FontWeight.w800),
+                              style: TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
                         ),
@@ -192,14 +192,11 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
       barrierColor: Colors.black.withOpacity(0.25),
       builder: (context) {
         return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-            ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -209,7 +206,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                     '프로젝트 이름 수정',
                     style: TextStyle(
                       fontSize: 24,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: kText,
                     ),
                   ),
@@ -227,17 +224,17 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(52),
-                          side: const BorderSide(color: Color(0xFFE4D9D4)),
+                          minimumSize: const Size.fromHeight(48),
+                          side: const BorderSide(color: kBorder),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: const Text(
                           '취소',
                           style: TextStyle(
                             color: kSub,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -260,14 +257,14 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                           backgroundColor: kWine,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          minimumSize: const Size.fromHeight(52),
+                          minimumSize: const Size.fromHeight(48),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: const Text(
                           '저장',
-                          style: TextStyle(fontWeight: FontWeight.w800),
+                          style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
@@ -291,14 +288,11 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
         return StatefulBuilder(
           builder: (context, setInnerState) {
             return Dialog(
-              backgroundColor: Colors.transparent,
-              insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(22),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -308,7 +302,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                         '상태 수정',
                         style: TextStyle(
                           fontSize: 24,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           color: kText,
                         ),
                       ),
@@ -339,17 +333,17 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(52),
-                              side: const BorderSide(color: Color(0xFFE4D9D4)),
+                              minimumSize: const Size.fromHeight(48),
+                              side: const BorderSide(color: kBorder),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             child: const Text(
                               '취소',
                               style: TextStyle(
                                 color: kSub,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -369,14 +363,14 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                               backgroundColor: kWine,
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              minimumSize: const Size.fromHeight(52),
+                              minimumSize: const Size.fromHeight(48),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             child: const Text(
                               '저장',
-                              style: TextStyle(fontWeight: FontWeight.w800),
+                              style: TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
                         ),
@@ -398,14 +392,11 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
       barrierColor: Colors.black.withOpacity(0.25),
       builder: (context) {
         return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-            ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -415,7 +406,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                     '프로젝트 삭제',
                     style: TextStyle(
                       fontSize: 24,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: kText,
                     ),
                   ),
@@ -439,17 +430,17 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(52),
-                          side: const BorderSide(color: Color(0xFFE4D9D4)),
+                          minimumSize: const Size.fromHeight(48),
+                          side: const BorderSide(color: kBorder),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: const Text(
                           '취소',
                           style: TextStyle(
                             color: kSub,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -467,14 +458,14 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                           backgroundColor: const Color(0xFFD94A3A),
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          minimumSize: const Size.fromHeight(52),
+                          minimumSize: const Size.fromHeight(48),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: const Text(
                           '삭제',
-                          style: TextStyle(fontWeight: FontWeight.w800),
+                          style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
@@ -547,92 +538,166 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
     return Scaffold(
       backgroundColor: kCream,
       body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              color: kWine,
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 30),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '프로젝트',
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 380),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 24),
+                decoration: BoxDecoration(
+                  color: kCard,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildTopSection(context),
+                    const SizedBox(height: 18),
+                    _buildIntroCard(),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: ElevatedButton.icon(
+                        onPressed: _showAddProjectDialog,
+                        icon: const Icon(
+                          Icons.add,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          '새 프로젝트 추가',
                           style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
                             color: Colors.white,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                        SizedBox(height: 12),
-                        Text(
-                          '팀 프로젝트를 효율적으로 관리하세요',
-                          style: TextStyle(
-                            color: Color(0xFFF2E3E7),
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: kWine,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: _showAddProjectDialog,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.14),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      '+ 새 프로젝트',
-                      style: TextStyle(fontWeight: FontWeight.w800),
+                    const SizedBox(height: 22),
+                    const Text(
+                      '✶ 내 프로젝트',
+                      style: TextStyle(
+                        color: kWine,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 14),
+                    projects.isEmpty
+                        ? const _EmptyProjectView()
+                        : ListView.separated(
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: projects.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 14),
+                            itemBuilder: (context, index) {
+                              final item = projects[index];
+                              return _ProjectCard(
+                                item: item,
+                                statusColor: _statusColor(item.status),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ProjectDetailScreen(
+                                        projectNumber: item.number,
+                                        projectTitle: item.title,
+                                        projectGoal: '',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onMoreTap: () => _showProjectMenu(context, index),
+                              );
+                            },
+                          ),
+                  ],
+                ),
               ),
             ),
-            Expanded(
-              child: projects.isEmpty
-                  ? const _EmptyProjectView()
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
-                      itemCount: projects.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        final item = projects[index];
-                        return _ProjectCard(
-                          item: item,
-                          statusColor: _statusColor(item.status),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ProjectDetailScreen(
-                                  projectNumber: item.number,
-                                  projectTitle: item.title,
-                                  projectGoal: '',
-                                ),
-                              ),
-                            );
-                          },
-                          onMoreTap: () => _showProjectMenu(context, index),
-                        );
-                      },
-                    ),
-            ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+Widget _buildTopSection(BuildContext context) {
+  return Stack(
+    alignment: Alignment.center,
+    children: [
+      // 왼쪽: 홈으로 버튼
+      Align(
+        alignment: Alignment.centerLeft,
+        child: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.arrow_back_ios_new,
+                size: 16,
+                color: kSub,
+              ),
+              SizedBox(width: 4),
+              Text(
+                '홈으로',
+                style: TextStyle(
+                  color: kSub,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+
+      // 가운데: 제목
+      const Text(
+        '프로젝트',
+        style: TextStyle(
+          color: kText,
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ],
+  );
+}
+
+  Widget _buildIntroCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      decoration: BoxDecoration(
+        color: kSoftCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFEAE1E1)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: const Text(
+        '현재 진행 중인 프로젝트와 상태를 한눈에 확인하고, 필요하면 이름이나 상태를 바로 수정해보세요.',
+        style: TextStyle(
+          fontSize: 15,
+          color: Color(0xFF4B3A3A),
+          height: 1.5,
         ),
       ),
     );
@@ -657,18 +722,19 @@ class _ProjectCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Ink(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: _ProjectListScreenState.kCard,
-            borderRadius: BorderRadius.circular(28),
+            color: _ProjectListScreenState.kSoftCard,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _ProjectListScreenState.kBorder),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 16,
-                offset: Offset(0, 6),
+                color: Color(0x0D000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
               ),
             ],
           ),
@@ -683,20 +749,20 @@ class _ProjectCard extends StatelessWidget {
                       item.title,
                       style: const TextStyle(
                         color: _ProjectListScreenState.kText,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   InkWell(
                     onTap: onMoreTap,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(9),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F1EE),
-                        borderRadius: BorderRadius.circular(14),
+                        color: const Color(0xFFF7EFEF),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
                         Icons.more_horiz,
@@ -707,13 +773,24 @@ class _ProjectCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
+              Text(
+                item.number,
+                style: const TextStyle(
+                  color: _ProjectListScreenState.kSub,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   item.status,
@@ -724,21 +801,21 @@ class _ProjectCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Text(
                 item.updatedText,
                 style: const TextStyle(
                   color: _ProjectListScreenState.kSub,
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 14),
               const Divider(color: Color(0xFFF0E8E4), height: 1),
               const SizedBox(height: 14),
               Wrap(
-                spacing: 10,
-                runSpacing: 10,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   _InfoChip(
                     icon: Icons.group_outlined,
@@ -777,22 +854,22 @@ class _InfoChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0xFFF7F1EE),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             icon,
-            size: 18,
+            size: 17,
             color: _ProjectListScreenState.kSub,
           ),
-          const SizedBox(width: 7),
+          const SizedBox(width: 6),
           Text(
             text,
             style: const TextStyle(
               color: _ProjectListScreenState.kSub,
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -821,8 +898,8 @@ class _DialogField extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
             color: _ProjectListScreenState.kSub,
           ),
         ),
@@ -832,21 +909,24 @@ class _DialogField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: const TextStyle(
-              color: Color(0xFFB3AAA6),
-              fontWeight: FontWeight.w500,
+              color: Color(0xFFA58787),
+              fontSize: 14,
             ),
             filled: true,
-            fillColor: const Color(0xFFFCFAF8),
+            fillColor: _ProjectListScreenState.kInputFill,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 15,
+              horizontal: 14,
+              vertical: 14,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFFE8DFDA)),
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                color: _ProjectListScreenState.kBorder,
+                width: 1,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(
                 color: _ProjectListScreenState.kWine,
                 width: 1.2,
@@ -880,8 +960,8 @@ class _StatusDropdownField extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
             color: _ProjectListScreenState.kSub,
           ),
         ),
@@ -889,9 +969,9 @@ class _StatusDropdownField extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFFFCFAF8),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE8DFDA)),
+            color: _ProjectListScreenState.kInputFill,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _ProjectListScreenState.kBorder),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -943,7 +1023,7 @@ class _MenuTile extends StatelessWidget {
         height: 42,
         decoration: BoxDecoration(
           color: const Color(0xFFF7F1EE),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(icon, color: color),
       ),
@@ -963,38 +1043,41 @@ class _EmptyProjectView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.folder_open_outlined,
-              size: 54,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      decoration: BoxDecoration(
+        color: _ProjectListScreenState.kSoftCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _ProjectListScreenState.kBorder),
+      ),
+      child: const Column(
+        children: [
+          Icon(
+            Icons.folder_open_outlined,
+            size: 50,
+            color: _ProjectListScreenState.kSub,
+          ),
+          SizedBox(height: 14),
+          Text(
+            '아직 프로젝트가 없습니다',
+            style: TextStyle(
+              color: _ProjectListScreenState.kText,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            '상단의 새 프로젝트 버튼으로 시작해보세요',
+            textAlign: TextAlign.center,
+            style: TextStyle(
               color: _ProjectListScreenState.kSub,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
-            SizedBox(height: 14),
-            Text(
-              '아직 프로젝트가 없습니다',
-              style: TextStyle(
-                color: _ProjectListScreenState.kText,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              '상단의 새 프로젝트 버튼으로 시작해보세요',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _ProjectListScreenState.kSub,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
