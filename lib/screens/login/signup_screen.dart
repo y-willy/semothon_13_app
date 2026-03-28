@@ -10,6 +10,7 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  // 기존 입력 필드
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController majorController = TextEditingController();
@@ -25,12 +26,22 @@ class _SignupScreenState extends State<SignupScreen> {
     'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ',
   ];
 
+  // 시간표 데이터
+  final List<String> days = ['월', '화', '수', '목', '금'];
+  final int startHour = 9;
+  final int endHour = 21;
+
+  // 일정 목록: {id, day, startHour, startMin, endHour, endMin, title}
+  List<Map<String, dynamic>> scheduleItems = [];
+  int _nextId = 0;
+
   static const Color primaryColor = Color(0xFFA31621);
   static const Color bgColor = Color(0xFFF6F1F1);
   static const Color cardColor = Colors.white;
   static const Color subtitleColor = Color(0xFF7D6666);
   static const Color inputFillColor = Color(0xFFF9F1F1);
   static const Color cardBorder = Color(0xFFE7C9C9);
+  static const Color textDark = Color(0xFF1A1A1A);
 
   @override
   void dispose() {
@@ -42,18 +53,531 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  // ─── 일정 추가 다이얼로그 ───
+  void _showAddScheduleDialog({String? preselectedDay}) {
+    String selectedDay = preselectedDay ?? '월';
+    int sHour = 9, sMin = 0, eHour = 10, eMin = 0;
+    final titleController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Center(
+                        child: Text(
+                          '일정 추가',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: textDark,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 일정 이름
+                      const Text(
+                        '일정 이름',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF5F4747),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: titleController,
+                        decoration: InputDecoration(
+                          hintText: '예) 데이터구조, 알바, 동아리',
+                          hintStyle: const TextStyle(
+                            color: Color(0xFFA58787),
+                            fontSize: 14,
+                          ),
+                          filled: true,
+                          fillColor: inputFillColor,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(
+                              color: cardBorder,
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(
+                              color: primaryColor,
+                              width: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 요일 선택
+                      const Text(
+                        '요일',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF5F4747),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: days.map((day) {
+                          final isSelected = selectedDay == day;
+                          return Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setDialogState(() => selectedDay = day);
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 2),
+                                padding:
+                                const EdgeInsets.symmetric(vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? primaryColor
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? primaryColor
+                                        : cardBorder,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    day,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : textDark,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 시작 시간
+                      const Text(
+                        '시작 시간',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF5F4747),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdown(
+                              value: sHour,
+                              items: List.generate(
+                                  endHour - startHour,
+                                      (i) => startHour + i),
+                              label: (v) => '$v시',
+                              onChanged: (v) {
+                                setDialogState(() => sHour = v);
+                                if (sHour > eHour ||
+                                    (sHour == eHour && sMin >= eMin)) {
+                                  setDialogState(() {
+                                    eHour = sHour;
+                                    eMin = (sMin + 15) % 60;
+                                    if (eMin < sMin) eHour++;
+                                    if (eHour > endHour) eHour = endHour;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildDropdown(
+                              value: sMin,
+                              items: [0, 15, 30, 45],
+                              label: (v) => '${v.toString().padLeft(2, '0')}분',
+                              onChanged: (v) {
+                                setDialogState(() => sMin = v);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 종료 시간
+                      const Text(
+                        '종료 시간',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF5F4747),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdown(
+                              value: eHour,
+                              items: List.generate(
+                                  endHour - startHour + 1,
+                                      (i) => startHour + i),
+                              label: (v) => '$v시',
+                              onChanged: (v) {
+                                setDialogState(() => eHour = v);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildDropdown(
+                              value: eMin,
+                              items: [0, 15, 30, 45],
+                              label: (v) => '${v.toString().padLeft(2, '0')}분',
+                              onChanged: (v) {
+                                setDialogState(() => eMin = v);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // 버튼
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 44,
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: cardBorder),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                child: const Text(
+                                  '취소',
+                                  style: TextStyle(
+                                    color: textDark,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: SizedBox(
+                              height: 44,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  if (titleController.text.trim().isEmpty) {
+                                    return;
+                                  }
+                                  final startTotal = sHour * 60 + sMin;
+                                  final endTotal = eHour * 60 + eMin;
+                                  if (endTotal <= startTotal) {
+                                    return;
+                                  }
+
+                                  setState(() {
+                                    scheduleItems.add({
+                                      'id': _nextId++,
+                                      'day': selectedDay,
+                                      'startHour': sHour,
+                                      'startMin': sMin,
+                                      'endHour': eHour,
+                                      'endMin': eMin,
+                                      'title': titleController.text.trim(),
+                                    });
+                                  });
+                                  Navigator.pop(context);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  elevation: 0,
+                                  backgroundColor: primaryColor,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                child: const Text(
+                                  '추가',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDropdown({
+    required int value,
+    required List<int> items,
+    required String Function(int) label,
+    required void Function(int) onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: inputFillColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: cardBorder),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: items.contains(value) ? value : items.first,
+          isExpanded: true,
+          items: items.map((v) {
+            return DropdownMenuItem(
+              value: v,
+              child: Text(
+                label(v),
+                style: const TextStyle(fontSize: 14, color: textDark),
+              ),
+            );
+          }).toList(),
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+        ),
+      ),
+    );
+  }
+
+  // ─── 시간표 격자 위젯 (15분 단위, 일정 표시) ───
+  Widget _buildScheduleGrid() {
+    final hours = List.generate(endHour - startHour, (i) => startHour + i);
+    final quarterLabels = ['00', '15', '30', '45'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 요일 헤더
+        Row(
+          children: [
+            const SizedBox(width: 40),
+            ...days.map((day) => Expanded(
+              child: Center(
+                child: Text(
+                  day,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textDark,
+                  ),
+                ),
+              ),
+            )),
+          ],
+        ),
+        const SizedBox(height: 4),
+
+        // 격자 본체
+        ...hours.expand((hour) {
+          return List.generate(4, (q) {
+            final min = q * 15;
+            final showLabel = q == 0;
+
+            return Row(
+              children: [
+                // 시간 라벨 (정시에만 표시)
+                SizedBox(
+                  width: 40,
+                  height: 18,
+                  child: showLabel
+                      ? Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Text(
+                        '$hour:00',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: subtitleColor,
+                        ),
+                      ),
+                    ),
+                  )
+                      : null,
+                ),
+                // 각 요일 셀
+                ...days.map((day) {
+                  // 이 셀에 해당하는 일정 찾기
+                  final slotStart = hour * 60 + min;
+                  final item = scheduleItems.firstWhere(
+                        (s) {
+                      if (s['day'] != day) return false;
+                      final iStart = s['startHour'] * 60 + s['startMin'];
+                      final iEnd = s['endHour'] * 60 + s['endMin'];
+                      return slotStart >= iStart && slotStart < iEnd;
+                    },
+                    orElse: () => {},
+                  );
+                  final hasSchedule = item.isNotEmpty;
+
+                  // 일정 시작 셀인지 확인 (이름 표시용)
+                  bool isStart = false;
+                  if (hasSchedule) {
+                    isStart = (item['startHour'] == hour &&
+                        item['startMin'] == min);
+                  }
+
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        if (hasSchedule) {
+                          // 일정 삭제 확인
+                          _showDeleteDialog(item);
+                        } else {
+                          // 새 일정 추가
+                          _showAddScheduleDialog(preselectedDay: day);
+                        }
+                      },
+                      child: Container(
+                        height: 18,
+                        margin: const EdgeInsets.all(0.5),
+                        decoration: BoxDecoration(
+                          color: hasSchedule
+                              ? primaryColor.withOpacity(0.85)
+                              : const Color(0xFFF9F1F1),
+                          borderRadius: BorderRadius.circular(2),
+                          border: Border.all(
+                            color: hasSchedule
+                                ? primaryColor
+                                : const Color(0xFFEDE3E3),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: isStart
+                            ? Padding(
+                          padding:
+                          const EdgeInsets.only(left: 2, top: 1),
+                          child: Text(
+                            item['title'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 8,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        )
+                            : null,
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            );
+          });
+        }),
+      ],
+    );
+  }
+
+  void _showDeleteDialog(Map<String, dynamic> item) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          item['title'] ?? '일정',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          '${item['day']}요일 '
+              '${item['startHour']}:${item['startMin'].toString().padLeft(2, '0')}'
+              ' ~ '
+              '${item['endHour']}:${item['endMin'].toString().padLeft(2, '0')}',
+          style: const TextStyle(fontSize: 14, color: subtitleColor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('닫기'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                scheduleItems.removeWhere((s) => s['id'] == item['id']);
+              });
+              Navigator.pop(context);
+            },
+            child: const Text(
+              '삭제',
+              style: TextStyle(color: primaryColor),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 시간표 데이터를 JSON으로 변환
+  List<Map<String, dynamic>> getScheduleData() {
+    return scheduleItems.map((item) {
+      return {
+        'day': item['day'],
+        'start': '${item['startHour']}:${item['startMin'].toString().padLeft(2, '0')}',
+        'end': '${item['endHour']}:${item['endMin'].toString().padLeft(2, '0')}',
+        'title': item['title'],
+      };
+    }).toList();
+  }
+
   void onSignupSubmit() async {
     final Uri url = Uri.parse(
       'https://semothon13app-production.up.railway.app/auth/signup',
     );
 
     try {
-      // ── 1단계: 회원가입 ──
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "username": nameController.text.trim(),
           "email": emailController.text.trim(),
@@ -66,7 +590,6 @@ class _SignupScreenState extends State<SignupScreen> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // ── 2단계: 자동 로그인해서 토큰 받기 ──
         if (selectedMBTI != null ||
             personalityController.text.trim().isNotEmpty) {
           try {
@@ -85,7 +608,6 @@ class _SignupScreenState extends State<SignupScreen> {
               final loginData = jsonDecode(loginResponse.body);
               final token = loginData['access_token'];
 
-              // ── 3단계: 프로필에 MBTI, personality_summary 저장 ──
               if (token != null) {
                 final Map<String, dynamic> profileData = {};
                 if (selectedMBTI != null) {
@@ -106,15 +628,31 @@ class _SignupScreenState extends State<SignupScreen> {
                   },
                   body: jsonEncode(profileData),
                 );
+
+                // 시간표 저장
+                if (scheduleItems.isNotEmpty) {
+                  final scheduleData = getScheduleData();
+                  debugPrint('시간표 데이터: ${jsonEncode(scheduleData)}');
+
+                  // TODO: 백엔드 API 준비되면 아래 주석 해제
+                  // await http.post(
+                  //   Uri.parse(
+                  //     'https://semothon13app-production.up.railway.app/schedule/me',
+                  //   ),
+                  //   headers: {
+                  //     'Content-Type': 'application/json',
+                  //     'Authorization': 'Bearer $token',
+                  //   },
+                  //   body: jsonEncode({'schedule': scheduleData}),
+                  // );
+                }
               }
             }
           } catch (_) {
-            // 프로필 저장 실패해도 회원가입은 성공이므로 무시
-            debugPrint('프로필 저장 실패 (회원가입은 성공)');
+            debugPrint('프로필/시간표 저장 실패 (회원가입은 성공)');
           }
         }
 
-        // ── 성공 다이얼로그 ──
         if (!mounted) return;
 
         await showDialog(
@@ -275,6 +813,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 child: Column(
                   children: [
+                    // ─── 뒤로가기 ───
                     Align(
                       alignment: Alignment.centerLeft,
                       child: GestureDetector(
@@ -301,6 +840,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     const SizedBox(height: 18),
+
+                    // ─── 캐릭터 이미지 ───
                     Container(
                       width: 160,
                       height: 160,
@@ -337,16 +878,14 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // ─── 기본 정보 카드 (기존 그대로) ───
+                    // ─── 기본 정보 카드 ───
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFCFBFB),
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: const Color(0xFFEAE1E1),
-                        ),
+                        border: Border.all(color: const Color(0xFFEAE1E1)),
                         boxShadow: const [
                           BoxShadow(
                             color: Color(0x0D000000),
@@ -392,16 +931,14 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // ─── 추가: MBTI + 자기소개 카드 ───
+                    // ─── MBTI + 자기소개 카드 ───
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFCFBFB),
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: const Color(0xFFEAE1E1),
-                        ),
+                        border: Border.all(color: const Color(0xFFEAE1E1)),
                         boxShadow: const [
                           BoxShadow(
                             color: Color(0x0D000000),
@@ -413,7 +950,17 @@ class _SignupScreenState extends State<SignupScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // MBTI 선택
+                          const Center(
+                            child: Text(
+                              '나를 소개해주세요!',
+                              style: TextStyle(
+                                color: primaryColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
                           _label('MBTI'),
                           const SizedBox(height: 10),
                           GridView.builder(
@@ -454,7 +1001,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                       fontWeight: FontWeight.w600,
                                       color: isSelected
                                           ? Colors.white
-                                          : const Color(0xFF1A1A1A),
+                                          : textDark,
                                     ),
                                   ),
                                 ),
@@ -462,14 +1009,151 @@ class _SignupScreenState extends State<SignupScreen> {
                             },
                           ),
                           const SizedBox(height: 18),
-
-                          // 한줄 자기소개
                           _label('한줄 자기소개'),
                           const SizedBox(height: 8),
                           TextField(
                             controller: personalityController,
                             decoration: _inputDecoration(
                               '예) 계획적이고 꼼꼼한 성격입니다',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ─── 시간표 카드 ───
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFCFBFB),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: const Color(0xFFEAE1E1)),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x0D000000),
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Center(
+                            child: Text(
+                              '내 시간표',
+                              style: TextStyle(
+                                color: primaryColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Center(
+                            child: Text(
+                              '빈 칸을 터치해서 일정을 추가하세요',
+                              style: TextStyle(
+                                color: subtitleColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // 격자표
+                          _buildScheduleGrid(),
+
+                          const SizedBox(height: 12),
+
+                          // 추가된 일정 목록
+                          if (scheduleItems.isNotEmpty) ...[
+                            const Divider(color: cardBorder),
+                            const SizedBox(height: 8),
+                            _label('추가된 일정'),
+                            const SizedBox(height: 8),
+                            ...scheduleItems.map((item) {
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: primaryColor.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: primaryColor.withOpacity(0.2),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item['title'],
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: textDark,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${item['day']}  '
+                                                '${item['startHour']}:${item['startMin'].toString().padLeft(2, '0')}'
+                                                ' ~ '
+                                                '${item['endHour']}:${item['endMin'].toString().padLeft(2, '0')}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: subtitleColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          scheduleItems.removeWhere(
+                                                (s) => s['id'] == item['id'],
+                                          );
+                                        });
+                                      },
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 18,
+                                        color: subtitleColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ],
+
+                          // + 일정 추가 버튼
+                          const SizedBox(height: 8),
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: () => _showAddScheduleDialog(),
+                              icon: const Icon(
+                                Icons.add,
+                                size: 18,
+                                color: primaryColor,
+                              ),
+                              label: const Text(
+                                '일정 추가',
+                                style: TextStyle(
+                                  color: primaryColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                         ],
