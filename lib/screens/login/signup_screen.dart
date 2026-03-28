@@ -14,12 +14,23 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController majorController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController personalityController = TextEditingController();
+
+  // MBTI 선택
+  String? selectedMBTI;
+  final List<String> mbtiList = [
+    'ISTJ', 'ISFJ', 'INFJ', 'INTJ',
+    'ISTP', 'ISFP', 'INFP', 'INTP',
+    'ESTP', 'ESFP', 'ENFP', 'ENTP',
+    'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ',
+  ];
 
   static const Color primaryColor = Color(0xFFA31621);
   static const Color bgColor = Color(0xFFF6F1F1);
   static const Color cardColor = Colors.white;
   static const Color subtitleColor = Color(0xFF7D6666);
   static const Color inputFillColor = Color(0xFFF9F1F1);
+  static const Color cardBorder = Color(0xFFE7C9C9);
 
   @override
   void dispose() {
@@ -27,6 +38,7 @@ class _SignupScreenState extends State<SignupScreen> {
     emailController.dispose();
     majorController.dispose();
     passwordController.dispose();
+    personalityController.dispose();
     super.dispose();
   }
 
@@ -36,13 +48,14 @@ class _SignupScreenState extends State<SignupScreen> {
     );
 
     try {
+      // ── 1단계: 회원가입 ──
       final response = await http.post(
         url,
         headers: {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          "username": emailController.text.split('@')[0],
+          "username": nameController.text.trim(),
           "email": emailController.text.trim(),
           "password": passwordController.text.trim(),
           "display_name": nameController.text.trim(),
@@ -53,6 +66,55 @@ class _SignupScreenState extends State<SignupScreen> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // ── 2단계: 자동 로그인해서 토큰 받기 ──
+        if (selectedMBTI != null ||
+            personalityController.text.trim().isNotEmpty) {
+          try {
+            final loginResponse = await http.post(
+              Uri.parse(
+                'https://semothon13app-production.up.railway.app/auth/login',
+              ),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                "email": emailController.text.trim(),
+                "password": passwordController.text.trim(),
+              }),
+            );
+
+            if (loginResponse.statusCode == 200) {
+              final loginData = jsonDecode(loginResponse.body);
+              final token = loginData['access_token'];
+
+              // ── 3단계: 프로필에 MBTI, personality_summary 저장 ──
+              if (token != null) {
+                final Map<String, dynamic> profileData = {};
+                if (selectedMBTI != null) {
+                  profileData['mbti'] = selectedMBTI;
+                }
+                if (personalityController.text.trim().isNotEmpty) {
+                  profileData['personality_summary'] =
+                      personalityController.text.trim();
+                }
+
+                await http.patch(
+                  Uri.parse(
+                    'https://semothon13app-production.up.railway.app/profile/me',
+                  ),
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer $token',
+                  },
+                  body: jsonEncode(profileData),
+                );
+              }
+            }
+          } catch (_) {
+            // 프로필 저장 실패해도 회원가입은 성공이므로 무시
+            debugPrint('프로필 저장 실패 (회원가입은 성공)');
+          }
+        }
+
+        // ── 성공 다이얼로그 ──
         if (!mounted) return;
 
         await showDialog(
@@ -69,11 +131,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   horizontal: 24,
                   vertical: 28,
                 ),
-child: Column(
-        mainAxisSize: MainAxisSize.min, // [중요] 이 줄을 추가하면 창이 내용만큼 딱 줄어듭니다!
-        children: [
-          Image.asset(
-            'assets/images/happykhuong.png',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/images/happykhuong.png',
                       width: 90,
                       height: 90,
                       fit: BoxFit.contain,
@@ -239,24 +301,22 @@ child: Column(
                       ),
                     ),
                     const SizedBox(height: 18),
-                    // 수정된 코드 (이미지 적용)
-Container(
-  width: 160,
-  height: 160,
-  decoration: const BoxDecoration(
-    color: Colors.white, // 배경색 유지
-    shape: BoxShape.circle,
-  ),
-  child: Center(
-    child: Image.asset(
-      'assets/images/hikhuong-nk.png', // 사용할 이미지 경로
-      
-      width: 250, // 이미지 크기 조절
-      height: 250,
-      fit: BoxFit.contain,
-    ),
-  ),
-),
+                    Container(
+                      width: 160,
+                      height: 160,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Image.asset(
+                          'assets/images/hikhuong-nk.png',
+                          width: 250,
+                          height: 250,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 18),
                     const Text(
                       '회원가입!',
@@ -276,6 +336,8 @@ Container(
                       ),
                     ),
                     const SizedBox(height: 24),
+
+                    // ─── 기본 정보 카드 (기존 그대로) ───
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
@@ -325,35 +387,122 @@ Container(
                             obscureText: true,
                             decoration: _inputDecoration('••••••••'),
                           ),
-                          const SizedBox(height: 22),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 44,
-                            child: ElevatedButton.icon(
-                              onPressed: onSignupSubmit,
-                              icon: const Icon(
-                                Icons.person_add_alt_1,
-                                size: 18,
-                                color: Colors.white,
-                              ),
-                              label: const Text(
-                                '회원가입',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ─── 추가: MBTI + 자기소개 카드 ───
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFCFBFB),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: const Color(0xFFEAE1E1),
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x0D000000),
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // MBTI 선택
+                          _label('MBTI'),
+                          const SizedBox(height: 10),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              mainAxisSpacing: 8,
+                              crossAxisSpacing: 8,
+                              childAspectRatio: 1.8,
+                            ),
+                            itemCount: mbtiList.length,
+                            itemBuilder: (context, index) {
+                              final mbti = mbtiList[index];
+                              final isSelected = selectedMBTI == mbti;
+                              return GestureDetector(
+                                onTap: () =>
+                                    setState(() => selectedMBTI = mbti),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? primaryColor
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? primaryColor
+                                          : cardBorder,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    mbti,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : const Color(0xFF1A1A1A),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                elevation: 0,
-                                backgroundColor: primaryColor,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 18),
+
+                          // 한줄 자기소개
+                          _label('한줄 자기소개'),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: personalityController,
+                            decoration: _inputDecoration(
+                              '예) 계획적이고 꼼꼼한 성격입니다',
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+
+                    // ─── 회원가입 버튼 ───
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: ElevatedButton.icon(
+                        onPressed: onSignupSubmit,
+                        icon: const Icon(
+                          Icons.person_add_alt_1,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          '회원가입',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
                       ),
                     ),
                   ],
