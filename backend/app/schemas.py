@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from typing import Optional, List
 
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
@@ -252,3 +252,34 @@ class RoomUserAddResponse(BaseModel):
     role_in_room: str
     join_status: str
     joined_at: datetime
+
+
+class ScheduleCreateRequest(BaseModel):
+    day: str = Field(..., description="요일. 예: monday")
+    start_time: time
+    end_time: time
+    name: str = Field(..., max_length=255)
+    location: Optional[str] = Field(None, max_length=255)
+    description: Optional[str] = Field(None, max_length=500)
+
+
+class ScheduleUpdateRequest(BaseModel):
+    day: Optional[str] = None
+    start_time: Optional[time] = None
+    end_time: Optional[time] = None
+    name: Optional[str] = Field(None, max_length=255)
+    location: Optional[str] = Field(None, max_length=255)
+    description: Optional[str] = Field(None, max_length=500)
+
+
+class ScheduleResponse(BaseModel):
+    id: int
+    user_id: int
+    day: str
+    start_time: time
+    end_time: time
+    name: str
+    location: Optional[str] = None
+    description: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime

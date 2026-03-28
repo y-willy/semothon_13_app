@@ -1,5 +1,5 @@
 # app/models.py
-from sqlalchemy import Column, String, DateTime, func, ForeignKey, Text, Enum, BigInteger, Integer
+from sqlalchemy import Column, String, DateTime, func, ForeignKey, Text, Enum, BigInteger, Integer, Time
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT
 
@@ -112,3 +112,26 @@ class Task(Base):
     priority = Column(String(20), default="normal")
     due_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
+
+
+class UserSchedule(Base):
+    __tablename__ = "user_schedules"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True, index=True)
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    day = Column(String(20), nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+
+    name = Column(String(255), nullable=False)
+    location = Column(String(255), nullable=True)
+    description = Column(String(500), nullable=True)
+
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
