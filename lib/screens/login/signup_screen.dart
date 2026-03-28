@@ -1068,7 +1068,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           const SizedBox(height: 12),
 
-                          // 추가된 일정 목록
+                          // 추가된 일정 리스트
                           if (scheduleItems.isNotEmpty) ...[
                             const Divider(color: cardBorder),
                             const SizedBox(height: 8),
