@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
+
+String formatDate(DateTime date) {
+  return '${date.month}월 ${date.day}일';
+}
+
+String formatTimeOfDay(TimeOfDay time) {
+  final period = time.hour < 12 ? '오전' : '오후';
+  final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+  final minute = time.minute.toString().padLeft(2, '0');
+  return '$period $hour:$minute';
+}
 
 class ProjectDetailScreen extends StatefulWidget {
   final String projectNumber;
@@ -18,14 +28,12 @@ class ProjectDetailScreen extends StatefulWidget {
 }
 
 class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
-  static const Color kWine = Color(0xFFA31621);
-  static const Color kCream = Color(0xFFF6F1F1);
-  static const Color kCard = Colors.white;
-  static const Color kSoftCard = Color(0xFFFCFBFB);
-  static const Color kInputFill = Color(0xFFF9F1F1);
-  static const Color kBorder = Color(0xFFE7C9C9);
-  static const Color kText = Color(0xFF3A2A2A);
-  static const Color kSub = Color(0xFF7D6666);
+  static const Color kWine = Color(0xFF8E1F39);
+  static const Color kCream = Color(0xFFF4EFEC);
+  static const Color kCard = Color(0xFFFFFCFA);
+  static const Color kSoft = Color(0xFFF6F0EC);
+  static const Color kText = Color(0xFF1F1A1C);
+  static const Color kSub = Color(0xFF8B8480);
   static const Color kPurple = Color(0xFFB65AE1);
   static const Color kOrange = Color(0xFFFF6B2C);
   static const Color kGreen = Color(0xFF2E9E57);
@@ -34,146 +42,81 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   int selectedTabIndex = 0;
   int? expandedRoleIndex = 0;
+  int unreadChatCount = 2;
 
-  late String projectNumber;
   late String projectTitle;
-
   final TextEditingController chatController = TextEditingController();
 
-  final List<_MemberItem> members = [
+  late List<_MemberItem> members = [
     _MemberItem(name: '김민준', studentId: '2020123456'),
     _MemberItem(name: '이서연', studentId: '2020123457'),
     _MemberItem(name: '박지호', studentId: '2020123458'),
   ];
 
-  final List<_ScheduleItem> schedules = [
-    _ScheduleItem(title: '중간 점검 회의', dateTime: '2026-04-01 · 14:00 - 16:00'),
-    _ScheduleItem(title: '최종 리허설', dateTime: '2026-04-05 · 15:00 - 17:00'),
+  late List<_ScheduleItem> schedules = [
+    _ScheduleItem(
+      title: '중간 점검 회의',
+      date: DateTime.now().add(const Duration(days: 1)),
+      startTime: const TimeOfDay(hour: 14, minute: 0),
+      endTime: const TimeOfDay(hour: 16, minute: 0),
+    ),
+    _ScheduleItem(
+      title: '최종 리허설',
+      date: DateTime.now().add(const Duration(days: 4)),
+      startTime: const TimeOfDay(hour: 15, minute: 0),
+      endTime: const TimeOfDay(hour: 17, minute: 0),
+    ),
   ];
 
   late List<_RoleItem> roles = [
     _RoleItem(
       title: '자료조사',
       assignee: '김민준',
-      status: '진행 중',
-      tasks: [
-        _TaskItem(
-          title: '참고자료 찾기',
-          priority: '높음',
-          dueDate: DateTime.now().subtract(const Duration(days: 1)),
-          done: true,
-          source: 'AI',
-        ),
-        _TaskItem(
-          title: '논문 요약',
-          priority: '보통',
-          dueDate: DateTime.now(),
-          done: true,
-          source: 'AI',
-        ),
-        _TaskItem(
-          title: '출처 정리',
-          priority: '보통',
-          dueDate: DateTime.now().add(const Duration(days: 1)),
-          done: false,
-          source: 'AI',
-        ),
-      ],
+      status: '시작 전',
+      tasks: [],
     ),
     _RoleItem(
       title: '발표 자료 제작',
       assignee: '이서연',
-      status: '진행 중',
-      tasks: [
-        _TaskItem(
-          title: '슬라이드 초안 작성',
-          priority: '높음',
-          dueDate: DateTime.now(),
-          done: true,
-          source: 'AI',
-        ),
-        _TaskItem(
-          title: '디자인 통일',
-          priority: '보통',
-          dueDate: DateTime.now().add(const Duration(days: 1)),
-          done: false,
-          source: '수동',
-        ),
-        _TaskItem(
-          title: '최종 수정 반영',
-          priority: '높음',
-          dueDate: DateTime.now().add(const Duration(days: 2)),
-          done: false,
-          source: '수동',
-        ),
-      ],
+      status: '시작 전',
+      tasks: [],
     ),
     _RoleItem(
       title: '발표자',
       assignee: '박지호',
-      status: '지연',
-      tasks: [
-        _TaskItem(
-          title: '발표 대본 작성',
-          priority: '높음',
-          dueDate: DateTime.now().add(const Duration(days: 1)),
-          done: false,
-          source: 'AI',
-        ),
-        _TaskItem(
-          title: '리허설 진행',
-          priority: '높음',
-          dueDate: DateTime.now().add(const Duration(days: 2)),
-          done: false,
-          source: 'AI',
-        ),
-        _TaskItem(
-          title: '예상 질문 정리',
-          priority: '보통',
-          dueDate: DateTime.now().add(const Duration(days: 3)),
-          done: false,
-          source: 'AI',
-        ),
-      ],
+      status: '시작 전',
+      tasks: [],
     ),
   ];
 
   late List<_ChatMessage> chatMessages = [
     _ChatMessage(
-      sender: '김민준',
-      time: '오후 04:20',
-      message: '참고자료 3개 찾아서 정리 완료했습니다',
-      roleTag: '자료조사',
-      isAi: false,
-      isFile: false,
-    ),
-    _ChatMessage(
       sender: 'AI 코치',
       time: '오후 04:25',
-      message: '자료조사 역할이 예상보다 빠르게 진행되고 있습니다. 발표 자료 제작도 곧 시작하면 좋을 것 같아요!',
+      message: '역할별 업무를 아직 만들지 않았어요. 역할 탭에서 수동으로 추가하거나 AI 자동생성을 눌러보세요.',
       isAi: true,
       isFile: false,
     ),
-    _ChatMessage(
-      sender: '이서연',
-      time: '오전 10:15',
-      message: '발표자료_초안.pptx\n초안 공유드립니다!',
-      isAi: false,
-      isFile: true,
+  ];
+
+  late List<_AppNotification> notifications = [
+    _AppNotification(
+      title: '새 채팅 알림',
+      body: '새로운 진행 상황 메시지가 있어요.',
+      type: 'chat',
+      createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
     ),
-    _ChatMessage(
-      sender: 'AI 코치',
-      time: '오전 10:40',
-      message: '발표자 역할이 아직 시작되지 않았습니다. 담당자에게 진행 상황 공유를 요청해보세요.',
-      isAi: true,
-      isFile: false,
+    _AppNotification(
+      title: '업무 완료',
+      body: '김민준님이 참고자료 찾기 업무를 완료했어요.',
+      type: 'task',
+      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
     ),
   ];
 
   @override
   void initState() {
     super.initState();
-    projectNumber = widget.projectNumber;
     projectTitle = widget.projectTitle;
     _refreshAllRoleStatuses();
   }
@@ -190,10 +133,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         return kGreen;
       case '지연':
         return kOrange;
-      case '시작 전':
-        return kSub;
       case '마감 임박':
         return kOrange;
+      case '시작 전':
+        return kSub;
       default:
         return kWine;
     }
@@ -246,6 +189,34 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return count;
   }
 
+  List<_UrgentTaskView> get urgentTasks {
+    final List<_UrgentTaskView> items = [];
+    for (final role in roles) {
+      for (final task in role.tasks) {
+        if (isDueTomorrow(task) || isOverdue(task)) {
+          items.add(
+            _UrgentTaskView(
+              title: task.title,
+              assignee: role.assignee,
+              priority: task.priority,
+              dueDate: task.dueDate,
+              isOverdue: isOverdue(task),
+            ),
+          );
+        }
+      }
+    }
+    return items;
+  }
+
+  List<_ChatMessage> get fileMessages {
+    return chatMessages
+        .where((message) => message.isFile)
+        .toList()
+        .reversed
+        .toList();
+  }
+
   String get summaryStatus {
     if (overdueTaskCount > 0) return '기한 지난 업무 $overdueTaskCount개';
     if (urgentTaskCount > 0) return '마감 임박 업무 $urgentTaskCount개';
@@ -266,23 +237,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       role.status = '지연';
       return;
     }
-
     if (completed == total && total > 0) {
       role.status = '완료';
       return;
     }
-
     if (hasUrgent && completed < total) {
       role.status = '마감 임박';
       return;
     }
-
     if (completed == 0 && total > 0) {
       role.status = '시작 전';
       return;
     }
-
-    role.status = '진행 중';
+    if (completed > 0 && completed < total) {
+      role.status = '진행 중';
+      return;
+    }
+    role.status = '시작 전';
   }
 
   void _refreshAllRoleStatuses() {
@@ -292,11 +263,432 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   void toggleTask(int roleIndex, int taskIndex) {
+    final role = roles[roleIndex];
+    final task = role.tasks[taskIndex];
+    final wasDone = task.done;
+
     setState(() {
-      roles[roleIndex].tasks[taskIndex].done =
-          !roles[roleIndex].tasks[taskIndex].done;
+      task.done = !task.done;
+      _refreshRoleStatus(roleIndex);
+
+      if (!wasDone && task.done) {
+        notifications.insert(
+          0,
+          _AppNotification(
+            title: '업무 완료',
+            body: '${role.assignee}님이 ${task.title} 업무를 완료했어요.',
+            type: 'task',
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
+    });
+  }
+
+  void deleteTask(int roleIndex, int taskIndex) {
+    final role = roles[roleIndex];
+    final removedTaskTitle = role.tasks[taskIndex].title;
+
+    setState(() {
+      role.tasks.removeAt(taskIndex);
       _refreshRoleStatus(roleIndex);
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$removedTaskTitle 업무를 삭제했어요.'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void sendChatMessage() {
+    final text = chatController.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      chatMessages.add(
+        _ChatMessage(
+          sender: '나',
+          time: _fakeNowText(),
+          message: text,
+          roleTag: null,
+          isAi: false,
+          isFile: false,
+        ),
+      );
+      notifications.insert(
+        0,
+        _AppNotification(
+          title: '새 채팅 알림',
+          body: '새로운 진행 상황 메시지가 추가되었어요.',
+          type: 'chat',
+          createdAt: DateTime.now(),
+        ),
+      );
+      unreadChatCount += 1;
+      chatController.clear();
+    });
+  }
+
+  String _fakeNowText() {
+    final now = TimeOfDay.now();
+    final period = now.hour < 12 ? '오전' : '오후';
+    final hour = now.hourOfPeriod == 0 ? 12 : now.hourOfPeriod;
+    final minute = now.minute.toString().padLeft(2, '0');
+    return '$period $hour:$minute';
+  }
+
+  void _addAttachmentMessage(String message) {
+    setState(() {
+      chatMessages.add(
+        _ChatMessage(
+          sender: '나',
+          time: _fakeNowText(),
+          message: message,
+          roleTag: null,
+          isAi: false,
+          isFile: true,
+        ),
+      );
+      notifications.insert(
+        0,
+        _AppNotification(
+          title: '새 채팅 알림',
+          body: '새로운 파일이 공유되었어요.',
+          type: 'chat',
+          createdAt: DateTime.now(),
+        ),
+      );
+      unreadChatCount += 1;
+    });
+  }
+
+  String fileTypeLabel(String message) {
+    final firstLine = message.split('\n').first.toLowerCase();
+
+    if (firstLine.startsWith('http://') || firstLine.startsWith('https://')) {
+      return '링크';
+    }
+
+    if (firstLine.endsWith('.jpg') ||
+        firstLine.endsWith('.jpeg') ||
+        firstLine.endsWith('.png') ||
+        firstLine.endsWith('.gif') ||
+        firstLine.endsWith('.mp4') ||
+        firstLine.endsWith('.mov')) {
+      return '사진/동영상';
+    }
+
+    return '파일';
+  }
+
+  IconData fileTypeIcon(String message) {
+    final type = fileTypeLabel(message);
+    if (type == '사진/동영상') return Icons.photo_library_rounded;
+    if (type == '링크') return Icons.link_rounded;
+    return Icons.insert_drive_file_rounded;
+  }
+
+  Color fileTypeColor(String message) {
+    final type = fileTypeLabel(message);
+    if (type == '사진/동영상') return const Color(0xFF16A34A);
+    if (type == '링크') return const Color(0xFF2F80ED);
+    return const Color(0xFF6B7280);
+  }
+
+  Future<void> showAddMemberSheet() async {
+    final nameController = TextEditingController();
+    final studentIdController = TextEditingController();
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _SheetHandle(),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        '팀원 추가',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: kText,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _DialogField(
+                  controller: nameController,
+                  label: '이름',
+                  hintText: '팀원 이름을 입력하세요',
+                ),
+                const SizedBox(height: 14),
+                _DialogField(
+                  controller: studentIdController,
+                  label: '학번',
+                  hintText: '학번을 입력하세요',
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                          side: const BorderSide(color: Color(0xFFE4D9D4)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          '취소',
+                          style: TextStyle(
+                            color: kSub,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final name = nameController.text.trim();
+                          final studentId = studentIdController.text.trim();
+                          if (name.isEmpty || studentId.isEmpty) return;
+
+                          setState(() {
+                            members.add(
+                              _MemberItem(name: name, studentId: studentId),
+                            );
+                          });
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kWine,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          minimumSize: const Size.fromHeight(52),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          '추가',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> showAddScheduleSheet() async {
+    final titleController = TextEditingController();
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    TimeOfDay startTime = const TimeOfDay(hour: 14, minute: 0);
+    TimeOfDay endTime = const TimeOfDay(hour: 16, minute: 0);
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setInnerState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const _SheetHandle(),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            '일정 추가',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: kText,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _DialogField(
+                      controller: titleController,
+                      label: '제목',
+                      hintText: '예: 중간 점검 회의',
+                    ),
+                    const SizedBox(height: 14),
+                    _DateSelectField(
+                      label: '날짜',
+                      text: formatDate(selectedDate),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2024),
+                          lastDate: DateTime(2035),
+                        );
+                        if (picked != null) {
+                          setInnerState(() {
+                            selectedDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _TimeSelectField(
+                            label: '시작 시간',
+                            text: formatTimeOfDay(startTime),
+                            onTap: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: startTime,
+                              );
+                              if (picked != null) {
+                                setInnerState(() {
+                                  startTime = picked;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _TimeSelectField(
+                            label: '종료 시간',
+                            text: formatTimeOfDay(endTime),
+                            onTap: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: endTime,
+                              );
+                              if (picked != null) {
+                                setInnerState(() {
+                                  endTime = picked;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(52),
+                              side: const BorderSide(color: Color(0xFFE4D9D4)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              '취소',
+                              style: TextStyle(
+                                color: kSub,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final title = titleController.text.trim();
+                              if (title.isEmpty) return;
+
+                              setState(() {
+                                schedules.add(
+                                  _ScheduleItem(
+                                    title: title,
+                                    date: selectedDate,
+                                    startTime: startTime,
+                                    endTime: endTime,
+                                  ),
+                                );
+                              });
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kWine,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              minimumSize: const Size.fromHeight(52),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              '추가',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> showAddTaskDialog(int roleIndex) async {
@@ -305,16 +697,19 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.25),
+      barrierColor: Colors.black.withValues(alpha: 0.25),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setInnerState) {
             return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(22),
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -324,7 +719,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         '업무 추가',
                         style: TextStyle(
                           fontSize: 24,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
                           color: kText,
                         ),
                       ),
@@ -360,17 +755,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                              side: const BorderSide(color: kBorder),
+                              minimumSize: const Size.fromHeight(52),
+                              side: const BorderSide(color: Color(0xFFE4D9D4)),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(16),
                               ),
                             ),
                             child: const Text(
                               '취소',
                               style: TextStyle(
                                 color: kSub,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
@@ -384,14 +779,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
                               setState(() {
                                 roles[roleIndex].tasks.add(
-                                  _TaskItem(
-                                    title: title,
-                                    priority: '보통',
-                                    dueDate: selectedDate,
-                                    done: false,
-                                    source: '수동',
-                                  ),
-                                );
+                                      _TaskItem(
+                                        title: title,
+                                        priority: '보통',
+                                        dueDate: selectedDate,
+                                        done: false,
+                                        source: '수동',
+                                      ),
+                                    );
                                 _refreshRoleStatus(roleIndex);
                               });
 
@@ -401,14 +796,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                               backgroundColor: kWine,
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              minimumSize: const Size.fromHeight(48),
+                              minimumSize: const Size.fromHeight(52),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(16),
                               ),
                             ),
                             child: const Text(
                               '추가',
-                              style: TextStyle(fontWeight: FontWeight.w700),
+                              style: TextStyle(fontWeight: FontWeight.w800),
                             ),
                           ),
                         ),
@@ -429,16 +824,19 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.25),
+      barrierColor: Colors.black.withValues(alpha: 0.25),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setInnerState) {
             return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(22),
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -448,7 +846,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         '마감기한 수정',
                         style: TextStyle(
                           fontSize: 24,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
                           color: kText,
                         ),
                       ),
@@ -460,7 +858,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         roles[roleIndex].tasks[taskIndex].title,
                         style: const TextStyle(
                           fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: kSub,
                         ),
                       ),
@@ -490,17 +888,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                              side: const BorderSide(color: kBorder),
+                              minimumSize: const Size.fromHeight(52),
+                              side: const BorderSide(color: Color(0xFFE4D9D4)),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(16),
                               ),
                             ),
                             child: const Text(
                               '취소',
                               style: TextStyle(
                                 color: kSub,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
@@ -520,14 +918,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                               backgroundColor: kWine,
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              minimumSize: const Size.fromHeight(48),
+                              minimumSize: const Size.fromHeight(52),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(16),
                               ),
                             ),
                             child: const Text(
                               '저장',
-                              style: TextStyle(fontWeight: FontWeight.w700),
+                              style: TextStyle(fontWeight: FontWeight.w800),
                             ),
                           ),
                         ),
@@ -548,9 +946,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final generated = _aiRecommendedTasks(role.title);
 
     setState(() {
-      for (final task in generated) {
-        role.tasks.add(task);
-      }
+      role.tasks = generated;
       _refreshRoleStatus(roleIndex);
     });
   }
@@ -561,16 +957,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     if (roleTitle.contains('자료')) {
       return [
         _TaskItem(
-          title: '핵심 참고자료 3개 수집',
+          title: '참고자료 찾기',
           priority: '높음',
           dueDate: now.add(const Duration(days: 1)),
           done: false,
           source: 'AI',
         ),
         _TaskItem(
-          title: '자료 요약본 정리',
+          title: '논문 요약',
           priority: '보통',
           dueDate: now.add(const Duration(days: 2)),
+          done: false,
+          source: 'AI',
+        ),
+        _TaskItem(
+          title: '출처 정리',
+          priority: '보통',
+          dueDate: now.add(const Duration(days: 3)),
           done: false,
           source: 'AI',
         ),
@@ -580,16 +983,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     if (roleTitle.contains('발표 자료')) {
       return [
         _TaskItem(
-          title: '슬라이드 목차 구성',
+          title: '슬라이드 초안 작성',
           priority: '높음',
           dueDate: now.add(const Duration(days: 1)),
           done: false,
           source: 'AI',
         ),
         _TaskItem(
-          title: '디자인 통일 작업',
-          priority: '보통',
+          title: '디자인 정리',
+          priority: '높음',
           dueDate: now.add(const Duration(days: 2)),
+          done: false,
+          source: 'AI',
+        ),
+        _TaskItem(
+          title: '최종 수정 반영',
+          priority: '보통',
+          dueDate: now.add(const Duration(days: 3)),
           done: false,
           source: 'AI',
         ),
@@ -599,16 +1009,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     if (roleTitle.contains('발표')) {
       return [
         _TaskItem(
-          title: '발표 대본 초안 작성',
+          title: '발표 대본 준비',
           priority: '높음',
           dueDate: now.add(const Duration(days: 1)),
           done: false,
           source: 'AI',
         ),
         _TaskItem(
-          title: '1차 리허설 진행',
+          title: '1차 리허설',
           priority: '높음',
           dueDate: now.add(const Duration(days: 2)),
+          done: false,
+          source: 'AI',
+        ),
+        _TaskItem(
+          title: '예상 질문 정리',
+          priority: '보통',
+          dueDate: now.add(const Duration(days: 3)),
           done: false,
           source: 'AI',
         ),
@@ -633,25 +1050,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     ];
   }
 
-  void sendChatMessage() {
-    final text = chatController.text.trim();
-    if (text.isEmpty) return;
-
-    setState(() {
-      chatMessages.add(
-        _ChatMessage(
-          sender: '나',
-          time: _fakeNowText(),
-          message: text,
-          roleTag: null,
-          isAi: false,
-          isFile: false,
-        ),
-      );
-      chatController.clear();
-    });
-  }
-
   void showAttachmentOptions() {
     showModalBottomSheet(
       context: context,
@@ -666,14 +1064,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 42,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5DDD8),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
+              const _SheetHandle(),
               const SizedBox(height: 20),
               const Align(
                 alignment: Alignment.centerLeft,
@@ -681,7 +1072,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   '첨부 방식 선택',
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     color: kText,
                   ),
                 ),
@@ -726,27 +1117,406 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     );
   }
 
-  void _addAttachmentMessage(String message) {
-    setState(() {
-      chatMessages.add(
-        _ChatMessage(
-          sender: '나',
-          time: _fakeNowText(),
-          message: message,
-          roleTag: null,
-          isAi: false,
-          isFile: true,
-        ),
-      );
-    });
+  void showUrgentTasksSheet() {
+    final items = urgentTasks;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.72,
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              const _SheetHandle(),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      '마감 임박 업무',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: kText,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF6EE),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFFD4B2)),
+                ),
+                child: Text(
+                  items.isEmpty
+                      ? '현재 마감 임박 또는 지연 업무가 없습니다.'
+                      : '확인이 필요한 업무 ${items.length}개가 있습니다.',
+                  style: const TextStyle(
+                    color: kOrange,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: items.isEmpty
+                    ? const Center(
+                        child: Text(
+                          '표시할 업무가 없습니다.',
+                          style: TextStyle(
+                            color: kSub,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final task = items[index];
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: task.isOverdue
+                                    ? const Color(0xFFFFB6A1)
+                                    : const Color(0xFFFFC49E),
+                                width: 1.2,
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 72,
+                                  decoration: BoxDecoration(
+                                    color: kOrange,
+                                    borderRadius: BorderRadius.circular(99),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        task.title,
+                                        style: const TextStyle(
+                                          color: kText,
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '담당자: ${task.assignee}',
+                                        style: const TextStyle(
+                                          color: kSub,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        task.isOverdue ? '기한 지남' : '마감 임박',
+                                        style: const TextStyle(
+                                          color: kOrange,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      task.priority,
+                                      style: const TextStyle(
+                                        color: kOrange,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      formatDate(task.dueDate),
+                                      style: const TextStyle(
+                                        color: kSub,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
-  String _fakeNowText() {
-    final now = TimeOfDay.now();
-    final period = now.hour < 12 ? '오전' : '오후';
-    final hour = now.hourOfPeriod == 0 ? 12 : now.hourOfPeriod;
-    final minute = now.minute.toString().padLeft(2, '0');
-    return '$period $hour:$minute';
+  void showNotificationSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.62,
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              const _SheetHandle(),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      '알림',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: kText,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: notifications.isEmpty
+                    ? const Center(
+                        child: Text(
+                          '표시할 알림이 없어요.',
+                          style: TextStyle(
+                            color: kSub,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: notifications.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final item = notifications[index];
+                          return Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8F3F0),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  item.type == 'task'
+                                      ? Icons.task_alt_rounded
+                                      : Icons.chat_bubble_outline_rounded,
+                                  color: item.type == 'task' ? kGreen : kWine,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.title,
+                                        style: const TextStyle(
+                                          color: kText,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item.body,
+                                        style: const TextStyle(
+                                          color: kSub,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void showFileOnlySheet() {
+    final files = fileMessages;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.68,
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              const _SheetHandle(),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      '공유된 파일',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: kText,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: files.isEmpty
+                    ? const Center(
+                        child: Text(
+                          '공유된 파일이 없어요.',
+                          style: TextStyle(
+                            color: kSub,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: files.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final file = files[index];
+                          final firstLine = file.message.split('\n').first;
+
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8F3F0),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 46,
+                                  height: 46,
+                                  decoration: BoxDecoration(
+                                    color: fileTypeColor(file.message)
+                                        .withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Icon(
+                                    fileTypeIcon(file.message),
+                                    color: fileTypeColor(file.message),
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        fileTypeLabel(file.message),
+                                        style: TextStyle(
+                                          color: fileTypeColor(file.message),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        firstLine,
+                                        style: const TextStyle(
+                                          color: kText,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        file.time,
+                                        style: const TextStyle(
+                                          color: kSub,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget buildTabContent() {
@@ -758,6 +1528,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           summaryStatus: summaryStatus,
           urgentTaskCount: urgentTaskCount,
           overdueTaskCount: overdueTaskCount,
+          onAddMember: showAddMemberSheet,
+          onAddSchedule: showAddScheduleSheet,
         );
       case 1:
         return _RolesTab(
@@ -772,6 +1544,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           onAddTask: showAddTaskDialog,
           onEditDeadline: showEditTaskDeadlineDialog,
           onAutoGenerate: autoGenerateTasks,
+          onDeleteTask: deleteTask,
           statusColor: statusColor,
           completedTaskCount: completedTaskCount,
           totalTaskCount: totalTaskCount,
@@ -784,6 +1557,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           controller: chatController,
           onAttachTap: showAttachmentOptions,
           onSendTap: sendChatMessage,
+          onFileOnlyTap: showFileOnlySheet,
         );
       case 3:
         return _StatusTab(
@@ -805,44 +1579,35 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return Scaffold(
       backgroundColor: kCream,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 380),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(18, 22, 18, 24),
-                decoration: BoxDecoration(
-                  color: kCard,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _HeaderSection(
-                      projectNumber: projectNumber,
-                      projectTitle: projectTitle,
-                      summaryStatus: summaryStatus,
-                      onBack: () => Navigator.pop(context),
-                      statusColor: statusColor(summaryStatus),
-                    ),
-                    const SizedBox(height: 18),
-                    _TopTabBar(
-                      selectedIndex: selectedTabIndex,
-                      onChanged: (index) {
-                        setState(() {
-                          selectedTabIndex = index;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 18),
-                    buildTabContent(),
-                  ],
-                ),
+        child: Column(
+          children: [
+            _HeaderSection(
+              projectTitle: projectTitle,
+              summaryStatus: summaryStatus,
+              onBack: () => Navigator.pop(context),
+              onBellTap: showNotificationSheet,
+              statusColor: statusColor(summaryStatus),
+              onStatusTap: showUrgentTasksSheet,
+            ),
+            _TopTabBar(
+              selectedIndex: selectedTabIndex,
+              unreadChatCount: unreadChatCount,
+              onChanged: (index) {
+                setState(() {
+                  selectedTabIndex = index;
+                  if (index == 2) {
+                    unreadChatCount = 0;
+                  }
+                });
+              },
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+                child: buildTabContent(),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -850,125 +1615,116 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 }
 
 class _HeaderSection extends StatelessWidget {
-  final String projectNumber;
   final String projectTitle;
   final String summaryStatus;
   final VoidCallback onBack;
+  final VoidCallback onBellTap;
+  final VoidCallback onStatusTap;
   final Color statusColor;
 
   const _HeaderSection({
-    required this.projectNumber,
     required this.projectTitle,
     required this.summaryStatus,
     required this.onBack,
+    required this.onBellTap,
+    required this.onStatusTap,
     required this.statusColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: GestureDetector(
+    return Container(
+      width: double.infinity,
+      color: _ProjectDetailScreenState.kWine,
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 26),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              GestureDetector(
                 onTap: onBack,
                 child: const Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.arrow_back_ios_new,
-                      size: 16,
-                      color: _ProjectDetailScreenState.kSub,
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 18,
                     ),
-                    SizedBox(width: 4),
+                    SizedBox(width: 8),
                     Text(
                       '프로젝트 목록으로',
                       style: TextStyle(
-                        color: _ProjectDetailScreenState.kSub,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            
-          ],
-        ),
-        const SizedBox(height: 18),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-          decoration: BoxDecoration(
-            color: _ProjectDetailScreenState.kSoftCard,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: _ProjectDetailScreenState.kBorder),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0D000000),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                projectNumber,
-                style: const TextStyle(
-                  color: _ProjectDetailScreenState.kSub,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                projectTitle,
-                style: const TextStyle(
-                  color: _ProjectDetailScreenState.kText,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  summaryStatus,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+              const Spacer(),
+              InkWell(
+                onTap: onBellTap,
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.notifications_none_rounded,
+                    color: Colors.white,
+                    size: 24,
                   ),
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 30),
+          Text(
+            projectTitle,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              height: 1.15,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 18),
+          GestureDetector(
+            onTap: onStatusTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                summaryStatus,
+                style: TextStyle(
+                  color: statusColor == _ProjectDetailScreenState.kOrange
+                      ? const Color(0xFFFFE1D3)
+                      : Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _TopTabBar extends StatelessWidget {
   final int selectedIndex;
+  final int unreadChatCount;
   final ValueChanged<int> onChanged;
 
   const _TopTabBar({
     required this.selectedIndex,
+    required this.unreadChatCount,
     required this.onChanged,
   });
 
@@ -981,53 +1737,78 @@ class _TopTabBar extends StatelessWidget {
       (Icons.bar_chart_outlined, '현황'),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return Container(
+      color: Colors.white.withOpacity(0.82),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: List.generate(tabs.length, (index) {
           final selected = selectedIndex == index;
           final item = tabs[index];
+          final isChatTab = index == 2;
 
-          return Padding(
-            padding: EdgeInsets.only(right: index == tabs.length - 1 ? 0 : 8),
-            child: GestureDetector(
-              onTap: () => onChanged(index),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? _ProjectDetailScreenState.kWine
-                      : const Color(0xFFF7EFEF),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: selected
-                        ? _ProjectDetailScreenState.kWine
-                        : _ProjectDetailScreenState.kBorder,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      item.$1,
-                      size: 18,
-                      color: selected
-                          ? Colors.white
-                          : _ProjectDetailScreenState.kSub,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      item.$2,
-                      style: TextStyle(
+          return GestureDetector(
+            onTap: () => onChanged(index),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: selected ? const Color(0xFFF6EFEC) : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        item.$1,
+                        size: 18,
                         color: selected
-                            ? Colors.white
+                            ? _ProjectDetailScreenState.kText
                             : _ProjectDetailScreenState.kSub,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
                       ),
+                      if (isChatTab && unreadChatCount > 0)
+                        Positioned(
+                          right: -10,
+                          top: -8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              unreadChatCount > 9 ? '9+' : '$unreadChatCount',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    item.$2,
+                    style: TextStyle(
+                      color: selected
+                          ? _ProjectDetailScreenState.kText
+                          : _ProjectDetailScreenState.kSub,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -1043,6 +1824,8 @@ class _OverviewTab extends StatelessWidget {
   final String summaryStatus;
   final int urgentTaskCount;
   final int overdueTaskCount;
+  final VoidCallback onAddMember;
+  final VoidCallback onAddSchedule;
 
   const _OverviewTab({
     required this.members,
@@ -1050,6 +1833,8 @@ class _OverviewTab extends StatelessWidget {
     required this.summaryStatus,
     required this.urgentTaskCount,
     required this.overdueTaskCount,
+    required this.onAddMember,
+    required this.onAddSchedule,
   });
 
   @override
@@ -1066,6 +1851,7 @@ class _OverviewTab extends StatelessWidget {
           title: '팀원',
           icon: Icons.group_outlined,
           buttonText: '+ 추가',
+          onButtonTap: onAddMember,
           child: Column(
             children: members.map((member) {
               return Padding(
@@ -1084,13 +1870,15 @@ class _OverviewTab extends StatelessWidget {
           title: '일정',
           icon: Icons.calendar_today_outlined,
           buttonText: '+ 추가',
+          onButtonTap: onAddSchedule,
           child: Column(
             children: schedules.map((schedule) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _SimpleListTile(
                   title: schedule.title,
-                  subtitle: schedule.dateTime,
+                  subtitle:
+                      '${formatDate(schedule.date)} · ${formatTimeOfDay(schedule.startTime)} - ${formatTimeOfDay(schedule.endTime)}',
                 ),
               );
             }).toList(),
@@ -1109,6 +1897,7 @@ class _RolesTab extends StatelessWidget {
   final Future<void> Function(int) onAddTask;
   final Future<void> Function(int, int) onEditDeadline;
   final void Function(int) onAutoGenerate;
+  final void Function(int, int) onDeleteTask;
   final Color Function(String) statusColor;
   final int Function(_RoleItem) completedTaskCount;
   final int Function(_RoleItem) totalTaskCount;
@@ -1123,6 +1912,7 @@ class _RolesTab extends StatelessWidget {
     required this.onAddTask,
     required this.onEditDeadline,
     required this.onAutoGenerate,
+    required this.onDeleteTask,
     required this.statusColor,
     required this.completedTaskCount,
     required this.totalTaskCount,
@@ -1139,16 +1929,17 @@ class _RolesTab extends StatelessWidget {
           '역할 분담',
           style: TextStyle(
             color: _ProjectDetailScreenState.kText,
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 6),
         const Text(
-          '역할마다 업무를 직접 추가하거나 AI 추천을 받을 수 있어요',
+          '누가 어떤 업무를 맡았는지 한눈에 보고, 업무를 추가하거나 수정할 수 있어요',
           style: TextStyle(
             color: _ProjectDetailScreenState.kSub,
             fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 16),
@@ -1158,27 +1949,24 @@ class _RolesTab extends StatelessWidget {
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 14),
-            child: Column(
-              children: [
-                GestureDetector(
-                  onTap: () => onRoleTap(index),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: _ProjectDetailScreenState.kSoftCard,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: _ProjectDetailScreenState.kBorder,
-                      ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x0D000000),
-                          blurRadius: 10,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: _ProjectDetailScreenState.kCard,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0A000000),
+                    blurRadius: 14,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: () => onRoleTap(index),
                     child: Column(
                       children: [
                         Row(
@@ -1188,8 +1976,8 @@ class _RolesTab extends StatelessWidget {
                                 role.title,
                                 style: const TextStyle(
                                   color: _ProjectDetailScreenState.kText,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                             ),
@@ -1207,7 +1995,7 @@ class _RolesTab extends StatelessWidget {
                                   role.status,
                                   style: TextStyle(
                                     color: statusColor(role.status),
-                                    fontSize: 13,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
@@ -1218,12 +2006,22 @@ class _RolesTab extends StatelessWidget {
                         const SizedBox(height: 10),
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: Text(
-                            role.assignee,
-                            style: const TextStyle(
-                              color: _ProjectDetailScreenState.kSub,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8F3F0),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Text(
+                              '${role.assignee}의 업무',
+                              style: const TextStyle(
+                                color: _ProjectDetailScreenState.kText,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ),
@@ -1236,14 +2034,14 @@ class _RolesTab extends StatelessWidget {
                                 vertical: 8,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF7EFEF),
+                                color: const Color(0xFFF7F1EE),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Text(
                                 '업무 ${completedTaskCount(role)}/${totalTaskCount(role)} 완료',
                                 style: const TextStyle(
                                   color: _ProjectDetailScreenState.kSub,
-                                  fontSize: 12,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -1256,8 +2054,9 @@ class _RolesTab extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: expanded
-                                    ? _ProjectDetailScreenState.kWine.withOpacity(0.10)
-                                    : const Color(0xFFF7EFEF),
+                                    ? _ProjectDetailScreenState.kWine
+                                        .withOpacity(0.10)
+                                    : const Color(0xFFF7F1EE),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Text(
@@ -1266,7 +2065,7 @@ class _RolesTab extends StatelessWidget {
                                   color: expanded
                                       ? _ProjectDetailScreenState.kWine
                                       : _ProjectDetailScreenState.kSub,
-                                  fontSize: 12,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -1276,90 +2075,139 @@ class _RolesTab extends StatelessWidget {
                       ],
                     ),
                   ),
-                ),
-                if (expanded) ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: _ProjectDetailScreenState.kSoftCard,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: _ProjectDetailScreenState.kBorder,
-                      ),
+                  if (expanded) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      height: 1,
+                      color: const Color(0xFFF0E8E4),
                     ),
-                    child: Column(
+                    const SizedBox(height: 16),
+                    Row(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '업무 리스트',
-                              style: TextStyle(
-                                color: _ProjectDetailScreenState.kText,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
+                        Text(
+                          '${role.assignee}의 업무 리스트',
+                          style: const TextStyle(
+                            color: _ProjectDetailScreenState.kText,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => onAddTask(index),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 40),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            side: const BorderSide(color: Color(0xFFE4D9D4)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            '+ 수동 추가',
+                            style: TextStyle(
+                              color: _ProjectDetailScreenState.kSub,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => onAutoGenerate(index),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _ProjectDetailScreenState.kWine,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            minimumSize: const Size(0, 40),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'AI 자동생성',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    if (role.tasks.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F3F0),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Text(
+                          '${role.assignee}에게 아직 배정된 업무가 없습니다. 수동으로 추가하거나 AI 자동생성을 눌러보세요.',
+                          style: const TextStyle(
+                            color: _ProjectDetailScreenState.kSub,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      )
+                    else
+                      ...List.generate(role.tasks.length, (taskIndex) {
+                        final task = role.tasks[taskIndex];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Dismissible(
+                            key: ValueKey(
+                                '${role.title}_${task.title}_$taskIndex'),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: const Icon(
+                                Icons.delete_rounded,
+                                color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                OutlinedButton(
-                                  onPressed: () => onAddTask(index),
-                                  style: OutlinedButton.styleFrom(
-                                    minimumSize: const Size(0, 40),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 10,
-                                    ),
-                                    side: const BorderSide(
-                                      color: _ProjectDetailScreenState.kBorder,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    '+ 수동 추가',
-                                    style: TextStyle(
-                                      color: _ProjectDetailScreenState.kSub,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () => onAutoGenerate(index),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        _ProjectDetailScreenState.kWine,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    minimumSize: const Size(0, 40),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 10,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'AI 자동생성',
-                                    style: TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        ...List.generate(role.tasks.length, (taskIndex) {
-                          final task = role.tasks[taskIndex];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
+                            confirmDismiss: (_) async {
+                              return await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: const Text('업무 삭제'),
+                                        content: const Text('이 업무를 삭제할까요?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: const Text('취소'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            child: const Text('삭제'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ) ??
+                                  false;
+                            },
+                            onDismissed: (_) => onDeleteTask(index, taskIndex),
                             child: _TaskTile(
                               task: task,
                               onTap: () => onTaskToggle(index, taskIndex),
@@ -1368,13 +2216,12 @@ class _RolesTab extends StatelessWidget {
                               isDueTomorrow: isDueTomorrow(task),
                               isOverdue: isOverdue(task),
                             ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
+                          ),
+                        );
+                      }),
+                  ],
                 ],
-              ],
+              ),
             ),
           );
         }),
@@ -1388,12 +2235,14 @@ class _ChatTab extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onAttachTap;
   final VoidCallback onSendTap;
+  final VoidCallback onFileOnlyTap;
 
   const _ChatTab({
     required this.messages,
     required this.controller,
     required this.onAttachTap,
     required this.onSendTap,
+    required this.onFileOnlyTap,
   });
 
   @override
@@ -1401,13 +2250,35 @@ class _ChatTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '진행상황 공유',
-          style: TextStyle(
-            color: _ProjectDetailScreenState.kText,
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-          ),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                '진행상황 공유',
+                style: TextStyle(
+                  color: _ProjectDetailScreenState.kText,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            InkWell(
+              onTap: onFileOnlyTap,
+              borderRadius: BorderRadius.circular(18),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3ECE8),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.folder_open_rounded,
+                  color: _ProjectDetailScreenState.kWine,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 6),
         const Text(
@@ -1415,6 +2286,7 @@ class _ChatTab extends StatelessWidget {
           style: TextStyle(
             color: _ProjectDetailScreenState.kSub,
             fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 16),
@@ -1422,9 +2294,8 @@ class _ChatTab extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _ProjectDetailScreenState.kSoftCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _ProjectDetailScreenState.kBorder),
+            color: _ProjectDetailScreenState.kCard,
+            borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
             children: [
@@ -1439,9 +2310,8 @@ class _ChatTab extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7EFEF),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _ProjectDetailScreenState.kBorder),
+                  color: const Color(0xFFF8F3F0),
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 child: Row(
                   children: [
@@ -1460,6 +2330,7 @@ class _ChatTab extends StatelessWidget {
                           hintStyle: TextStyle(
                             color: _ProjectDetailScreenState.kSub,
                             fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
                           border: InputBorder.none,
                         ),
@@ -1522,8 +2393,8 @@ class _StatusTab extends StatelessWidget {
           '진행 현황',
           style: TextStyle(
             color: _ProjectDetailScreenState.kText,
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 6),
@@ -1532,6 +2403,7 @@ class _StatusTab extends StatelessWidget {
           style: TextStyle(
             color: _ProjectDetailScreenState.kSub,
             fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 16),
@@ -1539,9 +2411,8 @@ class _StatusTab extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: _ProjectDetailScreenState.kSoftCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _ProjectDetailScreenState.kBorder),
+            color: _ProjectDetailScreenState.kCard,
+            borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
             children: [
@@ -1563,9 +2434,8 @@ class _StatusTab extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: _ProjectDetailScreenState.kSoftCard,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _ProjectDetailScreenState.kBorder),
+                color: _ProjectDetailScreenState.kCard,
+                borderRadius: BorderRadius.circular(22),
               ),
               child: Row(
                 children: [
@@ -1578,7 +2448,7 @@ class _StatusTab extends StatelessWidget {
                           style: const TextStyle(
                             color: _ProjectDetailScreenState.kText,
                             fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -1587,7 +2457,7 @@ class _StatusTab extends StatelessWidget {
                           style: const TextStyle(
                             color: _ProjectDetailScreenState.kSub,
                             fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -1596,7 +2466,7 @@ class _StatusTab extends StatelessWidget {
                           style: const TextStyle(
                             color: _ProjectDetailScreenState.kSub,
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -1646,33 +2516,29 @@ class _AiCoachCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: const Color(0xFFF9F1FF),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE8D6F8)),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundColor: Colors.white,
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/images/sadface.png',
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.cover,
-                  ),
+                backgroundColor: _ProjectDetailScreenState.kPurple,
+                child: Icon(
+                  Icons.smart_toy_outlined,
+                  color: Colors.white,
+                  size: 18,
                 ),
               ),
               SizedBox(width: 10),
               Text(
-                'AI 쿠옹 코치 분석',
+                'AI 코치 분석',
                 style: TextStyle(
                   color: Color(0xFF5A2B7A),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -1717,12 +2583,14 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final String buttonText;
+  final VoidCallback onButtonTap;
   final Widget child;
 
   const _SectionCard({
     required this.title,
     required this.icon,
     required this.buttonText,
+    required this.onButtonTap,
     required this.child,
   });
 
@@ -1732,16 +2600,8 @@ class _SectionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _ProjectDetailScreenState.kSoftCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _ProjectDetailScreenState.kBorder),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        color: _ProjectDetailScreenState.kCard,
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         children: [
@@ -1753,24 +2613,28 @@ class _SectionCard extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   color: _ProjectDetailScreenState.kText,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const Spacer(),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF7EFEF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  buttonText,
-                  style: const TextStyle(
-                    color: _ProjectDetailScreenState.kText,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+              InkWell(
+                onTap: onButtonTap,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: _ProjectDetailScreenState.kSoft,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    buttonText,
+                    style: const TextStyle(
+                      color: _ProjectDetailScreenState.kText,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),
@@ -1801,9 +2665,8 @@ class _SimpleListTile extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7EFEF),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _ProjectDetailScreenState.kBorder),
+        color: const Color(0xFFF8F3F0),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: [
@@ -1820,7 +2683,7 @@ class _SimpleListTile extends StatelessWidget {
                 leadingText!,
                 style: const TextStyle(
                   color: _ProjectDetailScreenState.kText,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -1834,7 +2697,7 @@ class _SimpleListTile extends StatelessWidget {
                   style: const TextStyle(
                     color: _ProjectDetailScreenState.kText,
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1843,7 +2706,7 @@ class _SimpleListTile extends StatelessWidget {
                   style: const TextStyle(
                     color: _ProjectDetailScreenState.kSub,
                     fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -1881,16 +2744,12 @@ class _TaskTile extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: hasAlert ? const Color(0xFFFFF1EC) : const Color(0xFFF7EFEF),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: hasAlert
-              ? const Color(0xFFFFD2C1)
-              : _ProjectDetailScreenState.kBorder,
-        ),
+        color: hasAlert ? const Color(0xFFFFF1EC) : const Color(0xFFF8F3F0),
+        borderRadius: BorderRadius.circular(18),
+        border: hasAlert ? Border.all(color: const Color(0xFFFFD2C1)) : null,
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -1919,7 +2778,7 @@ class _TaskTile extends StatelessWidget {
                             style: TextStyle(
                               color: _ProjectDetailScreenState.kText,
                               fontSize: 15,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                               decoration:
                                   task.done ? TextDecoration.lineThrough : null,
                             ),
@@ -1928,9 +2787,7 @@ class _TaskTile extends StatelessWidget {
                         if (task.source == 'AI')
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 5,
-                            ),
+                                horizontal: 8, vertical: 5),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF2E6FF),
                               borderRadius: BorderRadius.circular(12),
@@ -1970,7 +2827,7 @@ class _TaskTile extends StatelessWidget {
                                 style: const TextStyle(
                                   color: _ProjectDetailScreenState.kSub,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const SizedBox(width: 4),
@@ -2005,6 +2862,15 @@ class _TaskTile extends StatelessWidget {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 6),
+                    const Text(
+                      '왼쪽으로 밀어서 삭제',
+                      style: TextStyle(
+                        color: _ProjectDetailScreenState.kSub,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -2034,9 +2900,8 @@ class _ChatBubble extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isAi ? const Color(0xFFF9F1FF) : const Color(0xFFF7EFEF),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _ProjectDetailScreenState.kBorder),
+            color: isAi ? const Color(0xFFF9F1FF) : const Color(0xFFF8F3F0),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2048,7 +2913,7 @@ class _ChatBubble extends StatelessWidget {
                       ? const Color(0xFF7B3CB0)
                       : _ProjectDetailScreenState.kText,
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               if (message.roleTag != null) ...[
@@ -2057,7 +2922,7 @@ class _ChatBubble extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.65),
+                    color: Colors.white.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -2065,7 +2930,7 @@ class _ChatBubble extends StatelessWidget {
                     style: const TextStyle(
                       color: _ProjectDetailScreenState.kSub,
                       fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
@@ -2091,7 +2956,7 @@ class _ChatBubble extends StatelessWidget {
                       style: const TextStyle(
                         color: _ProjectDetailScreenState.kText,
                         fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -2103,7 +2968,7 @@ class _ChatBubble extends StatelessWidget {
                 style: const TextStyle(
                   color: _ProjectDetailScreenState.kSub,
                   fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -2132,7 +2997,7 @@ class _AiHintBox extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         text,
@@ -2164,7 +3029,7 @@ class _StatusCountRow extends StatelessWidget {
           style: const TextStyle(
             color: _ProjectDetailScreenState.kSub,
             fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const Spacer(),
@@ -2173,7 +3038,7 @@ class _StatusCountRow extends StatelessWidget {
           style: const TextStyle(
             color: _ProjectDetailScreenState.kText,
             fontSize: 16,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],
@@ -2200,8 +3065,8 @@ class _DialogField extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
             color: _ProjectDetailScreenState.kSub,
           ),
         ),
@@ -2211,22 +3076,19 @@ class _DialogField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: const TextStyle(
-              color: Color(0xFFA58787),
-              fontSize: 14,
+              color: Color(0xFFB3AAA6),
+              fontWeight: FontWeight.w500,
             ),
             filled: true,
-            fillColor: _ProjectDetailScreenState.kInputFill,
+            fillColor: const Color(0xFFFCFAF8),
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(
-                color: _ProjectDetailScreenState.kBorder,
-                width: 1,
-              ),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE8DFDA)),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(
                 color: _ProjectDetailScreenState.kWine,
                 width: 1.2,
@@ -2258,21 +3120,21 @@ class _DateSelectField extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
             color: _ProjectDetailScreenState.kSub,
           ),
         ),
         const SizedBox(height: 8),
         InkWell(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             decoration: BoxDecoration(
-              color: _ProjectDetailScreenState.kInputFill,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _ProjectDetailScreenState.kBorder),
+              color: const Color(0xFFFCFAF8),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE8DFDA)),
             ),
             child: Row(
               children: [
@@ -2281,12 +3143,72 @@ class _DateSelectField extends StatelessWidget {
                     text,
                     style: const TextStyle(
                       color: _ProjectDetailScreenState.kText,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
                 const Icon(
                   Icons.calendar_today_outlined,
+                  size: 18,
+                  color: _ProjectDetailScreenState.kSub,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TimeSelectField extends StatelessWidget {
+  final String label;
+  final String text;
+  final VoidCallback onTap;
+
+  const _TimeSelectField({
+    required this.label,
+    required this.text,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: _ProjectDetailScreenState.kSub,
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFCFAF8),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE8DFDA)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    text,
+                    style: const TextStyle(
+                      color: _ProjectDetailScreenState.kText,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.schedule_outlined,
                   size: 18,
                   color: _ProjectDetailScreenState.kSub,
                 ),
@@ -2319,8 +3241,8 @@ class _AttachOptionTile extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: const Color(0xFFF7EFEF),
-          borderRadius: BorderRadius.circular(12),
+          color: const Color(0xFFF7F1EE),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Icon(icon, color: _ProjectDetailScreenState.kWine),
       ),
@@ -2330,6 +3252,22 @@ class _AttachOptionTile extends StatelessWidget {
           color: _ProjectDetailScreenState.kText,
           fontWeight: FontWeight.w700,
         ),
+      ),
+    );
+  }
+}
+
+class _SheetHandle extends StatelessWidget {
+  const _SheetHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 5,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE5DDD8),
+        borderRadius: BorderRadius.circular(99),
       ),
     );
   }
@@ -2347,11 +3285,15 @@ class _MemberItem {
 
 class _ScheduleItem {
   final String title;
-  final String dateTime;
+  final DateTime date;
+  final TimeOfDay startTime;
+  final TimeOfDay endTime;
 
   _ScheduleItem({
     required this.title,
-    required this.dateTime,
+    required this.date,
+    required this.startTime,
+    required this.endTime,
   });
 }
 
@@ -2403,6 +3345,32 @@ class _ChatMessage {
   });
 }
 
-String formatDate(DateTime date) {
-  return '${date.month}월 ${date.day}일';
+class _UrgentTaskView {
+  final String title;
+  final String assignee;
+  final String priority;
+  final DateTime dueDate;
+  final bool isOverdue;
+
+  _UrgentTaskView({
+    required this.title,
+    required this.assignee,
+    required this.priority,
+    required this.dueDate,
+    required this.isOverdue,
+  });
+}
+
+class _AppNotification {
+  final String title;
+  final String body;
+  final String type;
+  final DateTime createdAt;
+
+  _AppNotification({
+    required this.title,
+    required this.body,
+    required this.type,
+    required this.createdAt,
+  });
 }
