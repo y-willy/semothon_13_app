@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 String formatDate(DateTime date) {
   return '${date.month}월 ${date.day}일';
@@ -45,6 +46,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   late String projectTitle;
   final TextEditingController chatController = TextEditingController();
+  final ScrollController _chatScrollController = ScrollController();
 
   late List<_MemberItem> members = [
     _MemberItem(name: '김민준', studentId: '2020123456'),
@@ -126,7 +128,24 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   @override
   void dispose() {
     chatController.dispose();
+    _chatScrollController.dispose();
     super.dispose();
+  }
+
+  void _dismissKeyboard() {
+    FocusScope.of(context).unfocus();
+  }
+
+  void _scrollChatToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_chatScrollController.hasClients) {
+        _chatScrollController.animateTo(
+          _chatScrollController.position.maxScrollExtent + 120,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   Color statusColor(String status) {
@@ -288,6 +307,326 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     }
   }
 
+  Future<void> showEditMemberSheet(int index) async {
+    final nameController = TextEditingController(text: members[index].name);
+    final studentIdController =
+        TextEditingController(text: members[index].studentId);
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _SheetHandle(),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        '팀원 수정',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: kText,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _DialogField(
+                  controller: nameController,
+                  label: '이름',
+                  hintText: '팀원 이름을 입력하세요',
+                ),
+                const SizedBox(height: 14),
+                _DialogField(
+                  controller: studentIdController,
+                  label: '학번',
+                  hintText: '학번을 입력하세요',
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                          side: const BorderSide(color: Color(0xFFE4D9D4)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          '취소',
+                          style: TextStyle(
+                            color: kSub,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final name = nameController.text.trim();
+                          final studentId = studentIdController.text.trim();
+                          if (name.isEmpty || studentId.isEmpty) return;
+
+                          setState(() {
+                            members[index] =
+                                _MemberItem(name: name, studentId: studentId);
+                          });
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kWine,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          minimumSize: const Size.fromHeight(52),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          '저장',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void deleteMember(int index) {
+    final removedName = members[index].name;
+    setState(() {
+      members.removeAt(index);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$removedName 팀원을 삭제했어요.'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> showEditScheduleSheet(int index) async {
+    final titleController = TextEditingController(text: schedules[index].title);
+    DateTime selectedDate = schedules[index].date;
+    TimeOfDay startTime = schedules[index].startTime;
+    TimeOfDay endTime = schedules[index].endTime;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setInnerState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const _SheetHandle(),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            '일정 수정',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: kText,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _DialogField(
+                      controller: titleController,
+                      label: '제목',
+                      hintText: '예: 중간 점검 회의',
+                    ),
+                    const SizedBox(height: 14),
+                    _DateSelectField(
+                      label: '날짜',
+                      text: formatDate(selectedDate),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2024),
+                          lastDate: DateTime(2035),
+                        );
+                        if (picked != null) {
+                          setInnerState(() {
+                            selectedDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _TimeSelectField(
+                            label: '시작 시간',
+                            text: formatTimeOfDay(startTime),
+                            onTap: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: startTime,
+                              );
+                              if (picked != null) {
+                                setInnerState(() {
+                                  startTime = picked;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _TimeSelectField(
+                            label: '종료 시간',
+                            text: formatTimeOfDay(endTime),
+                            onTap: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: endTime,
+                              );
+                              if (picked != null) {
+                                setInnerState(() {
+                                  endTime = picked;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(52),
+                              side: const BorderSide(color: Color(0xFFE4D9D4)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              '취소',
+                              style: TextStyle(
+                                color: kSub,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final title = titleController.text.trim();
+                              if (title.isEmpty) return;
+
+                              setState(() {
+                                schedules[index] = _ScheduleItem(
+                                  title: title,
+                                  date: selectedDate,
+                                  startTime: startTime,
+                                  endTime: endTime,
+                                );
+                              });
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kWine,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              minimumSize: const Size.fromHeight(52),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              '저장',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void deleteSchedule(int index) {
+    final removedTitle = schedules[index].title;
+    setState(() {
+      schedules.removeAt(index);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$removedTitle 일정을 삭제했어요.'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   void toggleTask(int roleIndex, int taskIndex) {
     final role = roles[roleIndex];
     final task = role.tasks[taskIndex];
@@ -359,6 +698,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
       chatController.clear();
     });
+
+    _scrollChatToBottom();
   }
 
   String _fakeNowText() {
@@ -394,6 +735,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         ),
       );
     });
+
+    _scrollChatToBottom();
   }
 
   String fileTypeLabel(String message) {
@@ -1575,52 +1918,73 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   Widget buildTabContent() {
     switch (selectedTabIndex) {
       case 0:
-        return _OverviewTab(
-          members: members,
-          schedules: schedules,
-          summaryStatus: summaryStatus,
-          urgentTaskCount: urgentTaskCount,
-          overdueTaskCount: overdueTaskCount,
-          onAddMember: showAddMemberSheet,
-          onAddSchedule: showAddScheduleSheet,
+        return SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+          child: _OverviewTab(
+            members: members,
+            schedules: schedules,
+            summaryStatus: summaryStatus,
+            urgentTaskCount: urgentTaskCount,
+            overdueTaskCount: overdueTaskCount,
+            onAddMember: showAddMemberSheet,
+            onAddSchedule: showAddScheduleSheet,
+            onEditMember: showEditMemberSheet,
+            onDeleteMember: deleteMember,
+            onEditSchedule: showEditScheduleSheet,
+            onDeleteSchedule: deleteSchedule,
+          ),
         );
       case 1:
-        return _RolesTab(
-          roles: roles,
-          expandedRoleIndex: expandedRoleIndex,
-          onRoleTap: (index) {
-            setState(() {
-              expandedRoleIndex = expandedRoleIndex == index ? null : index;
-            });
-          },
-          onTaskToggle: toggleTask,
-          onAddTask: showAddTaskDialog,
-          onEditDeadline: showEditTaskDeadlineDialog,
-          onAutoGenerate: autoGenerateTasks,
-          onDeleteTask: deleteTask,
-          statusColor: statusColor,
-          completedTaskCount: completedTaskCount,
-          totalTaskCount: totalTaskCount,
-          isDueTomorrow: isDueTomorrow,
-          isOverdue: isOverdue,
+        return SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+          child: _RolesTab(
+            roles: roles,
+            expandedRoleIndex: expandedRoleIndex,
+            onRoleTap: (index) {
+              setState(() {
+                expandedRoleIndex = expandedRoleIndex == index ? null : index;
+              });
+            },
+            onTaskToggle: toggleTask,
+            onAddTask: showAddTaskDialog,
+            onEditDeadline: showEditTaskDeadlineDialog,
+            onAutoGenerate: autoGenerateTasks,
+            onDeleteTask: deleteTask,
+            statusColor: statusColor,
+            completedTaskCount: completedTaskCount,
+            totalTaskCount: totalTaskCount,
+            isDueTomorrow: isDueTomorrow,
+            isOverdue: isOverdue,
+          ),
         );
       case 2:
-        return _ChatTab(
-          messages: chatMessages,
-          controller: chatController,
-          onAttachTap: showAttachmentOptions,
-          onSendTap: sendChatMessage,
-          onFileOnlyTap: showFileOnlySheet,
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 12),
+          child: _ChatTab(
+            messages: chatMessages,
+            controller: chatController,
+            scrollController: _chatScrollController,
+            onAttachTap: showAttachmentOptions,
+            onSendTap: sendChatMessage,
+            onFileOnlyTap: showFileOnlySheet,
+            onBackgroundTap: _dismissKeyboard,
+          ),
         );
       case 3:
-        return _StatusTab(
-          roles: roles,
-          summaryStatus: summaryStatus,
-          urgentTaskCount: urgentTaskCount,
-          overdueTaskCount: overdueTaskCount,
-          statusColor: statusColor,
-          completedTaskCount: completedTaskCount,
-          totalTaskCount: totalTaskCount,
+        return SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+          child: _StatusTab(
+            roles: roles,
+            summaryStatus: summaryStatus,
+            urgentTaskCount: urgentTaskCount,
+            overdueTaskCount: overdueTaskCount,
+            statusColor: statusColor,
+            completedTaskCount: completedTaskCount,
+            totalTaskCount: totalTaskCount,
+          ),
         );
       default:
         return const SizedBox.shrink();
@@ -1629,39 +1993,41 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kCream,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _HeaderSection(
-              projectTitle: projectTitle,
-              summaryStatus: summaryStatus,
-              onBack: () => Navigator.pop(context),
-              onBellTap: showNotificationSheet,
-              statusColor: statusColor(summaryStatus),
-              onStatusTap: showUrgentTasksSheet,
-              unreadNotificationCount: unreadNotificationCount,
-            ),
-            _TopTabBar(
-              selectedIndex: selectedTabIndex,
-              unreadChatCount: unreadChatCount,
-              onChanged: (index) {
-                setState(() {
-                  selectedTabIndex = index;
-                  if (index == 2) {
-                    _markAllChatAsRead();
-                  }
-                });
-              },
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+    return GestureDetector(
+      onTap: _dismissKeyboard,
+      behavior: HitTestBehavior.translucent,
+      child: Scaffold(
+        backgroundColor: kCream,
+        resizeToAvoidBottomInset: true,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _HeaderSection(
+                projectTitle: projectTitle,
+                summaryStatus: summaryStatus,
+                onBack: () => Navigator.pop(context),
+                onBellTap: showNotificationSheet,
+                statusColor: statusColor(summaryStatus),
+                onStatusTap: showUrgentTasksSheet,
+                unreadNotificationCount: unreadNotificationCount,
+              ),
+              _TopTabBar(
+                selectedIndex: selectedTabIndex,
+                unreadChatCount: unreadChatCount,
+                onChanged: (index) {
+                  setState(() {
+                    selectedTabIndex = index;
+                    if (index == 2) {
+                      _markAllChatAsRead();
+                    }
+                  });
+                },
+              ),
+              Expanded(
                 child: buildTabContent(),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1922,6 +2288,10 @@ class _OverviewTab extends StatelessWidget {
   final int overdueTaskCount;
   final VoidCallback onAddMember;
   final VoidCallback onAddSchedule;
+  final void Function(int) onEditMember;
+  final void Function(int) onDeleteMember;
+  final void Function(int) onEditSchedule;
+  final void Function(int) onDeleteSchedule;
 
   const _OverviewTab({
     required this.members,
@@ -1931,6 +2301,10 @@ class _OverviewTab extends StatelessWidget {
     required this.overdueTaskCount,
     required this.onAddMember,
     required this.onAddSchedule,
+    required this.onEditMember,
+    required this.onDeleteMember,
+    required this.onEditSchedule,
+    required this.onDeleteSchedule,
   });
 
   @override
@@ -1949,16 +2323,42 @@ class _OverviewTab extends StatelessWidget {
           buttonText: '+ 추가',
           onButtonTap: onAddMember,
           child: Column(
-            children: members.map((member) {
+            children: List.generate(members.length, (index) {
+              final member = members[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _SimpleListTile(
-                  title: member.name,
-                  subtitle: member.studentId,
-                  leadingText: member.name.characters.first,
+                child: Slidable(
+                  key: ValueKey('member_$index'),
+                  endActionPane: ActionPane(
+                    motion: const DrawerMotion(),
+                    extentRatio: 0.42,
+                    children: [
+                      SlidableAction(
+                        onPressed: (_) => onEditMember(index),
+                        backgroundColor: const Color(0xFFB65AE1),
+                        foregroundColor: Colors.white,
+                        icon: Icons.edit_rounded,
+                        label: '수정',
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      SlidableAction(
+                        onPressed: (_) => onDeleteMember(index),
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        icon: Icons.delete_rounded,
+                        label: '삭제',
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ],
+                  ),
+                  child: _SimpleListTile(
+                    title: member.name,
+                    subtitle: member.studentId,
+                    leadingText: member.name.characters.first,
+                  ),
                 ),
               );
-            }).toList(),
+            }),
           ),
         ),
         const SizedBox(height: 16),
@@ -1968,16 +2368,42 @@ class _OverviewTab extends StatelessWidget {
           buttonText: '+ 추가',
           onButtonTap: onAddSchedule,
           child: Column(
-            children: schedules.map((schedule) {
+            children: List.generate(schedules.length, (index) {
+              final schedule = schedules[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _SimpleListTile(
-                  title: schedule.title,
-                  subtitle:
-                      '${formatDate(schedule.date)} · ${formatTimeOfDay(schedule.startTime)} - ${formatTimeOfDay(schedule.endTime)}',
+                child: Slidable(
+                  key: ValueKey('schedule_$index'),
+                  endActionPane: ActionPane(
+                    motion: const DrawerMotion(),
+                    extentRatio: 0.42,
+                    children: [
+                      SlidableAction(
+                        onPressed: (_) => onEditSchedule(index),
+                        backgroundColor: const Color(0xFFB65AE1),
+                        foregroundColor: Colors.white,
+                        icon: Icons.edit_rounded,
+                        label: '수정',
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      SlidableAction(
+                        onPressed: (_) => onDeleteSchedule(index),
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        icon: Icons.delete_rounded,
+                        label: '삭제',
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ],
+                  ),
+                  child: _SimpleListTile(
+                    title: schedule.title,
+                    subtitle:
+                        '${formatDate(schedule.date)} · ${formatTimeOfDay(schedule.startTime)} - ${formatTimeOfDay(schedule.endTime)}',
+                  ),
                 ),
               );
-            }).toList(),
+            }),
           ),
         ),
       ],
@@ -2329,123 +2755,172 @@ class _RolesTab extends StatelessWidget {
 class _ChatTab extends StatelessWidget {
   final List<_ChatMessage> messages;
   final TextEditingController controller;
+  final ScrollController scrollController;
   final VoidCallback onAttachTap;
   final VoidCallback onSendTap;
   final VoidCallback onFileOnlyTap;
+  final VoidCallback onBackgroundTap;
 
   const _ChatTab({
     required this.messages,
     required this.controller,
+    required this.scrollController,
     required this.onAttachTap,
     required this.onSendTap,
     required this.onFileOnlyTap,
+    required this.onBackgroundTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                '진행상황 공유',
-                style: TextStyle(
-                  color: _ProjectDetailScreenState.kText,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            InkWell(
-              onTap: onFileOnlyTap,
-              borderRadius: BorderRadius.circular(18),
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3ECE8),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.folder_open_rounded,
-                  color: _ProjectDetailScreenState.kWine,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          '작업 내용과 파일을 공유하세요',
-          style: TextStyle(
-            color: _ProjectDetailScreenState.kSub,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _ProjectDetailScreenState.kCard,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return GestureDetector(
+      onTap: onBackgroundTap,
+      behavior: HitTestBehavior.translucent,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              ...messages.map((message) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _ChatBubble(message: message),
-                );
-              }),
-              const SizedBox(height: 6),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8F3F0),
-                  borderRadius: BorderRadius.circular(18),
+              const Expanded(
+                child: Text(
+                  '진행상황 공유',
+                  style: TextStyle(
+                    color: _ProjectDetailScreenState.kText,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: onAttachTap,
-                      icon: const Icon(
-                        Icons.add_circle_outline,
-                        color: _ProjectDetailScreenState.kSub,
-                      ),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: controller,
-                        decoration: const InputDecoration(
-                          hintText: '진행 상황을 공유하세요...',
-                          hintStyle: TextStyle(
-                            color: _ProjectDetailScreenState.kSub,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: onSendTap,
-                      icon: const Icon(
-                        Icons.send_rounded,
-                        color: _ProjectDetailScreenState.kWine,
-                      ),
-                    ),
-                  ],
+              ),
+              InkWell(
+                onTap: onFileOnlyTap,
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3ECE8),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.folder_open_rounded,
+                    color: _ProjectDetailScreenState.kWine,
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 6),
+          const Text(
+            '작업 내용과 파일을 공유하세요',
+            style: TextStyle(
+              color: _ProjectDetailScreenState.kSub,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: _ProjectDetailScreenState.kCard,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: NotificationListener<ScrollUpdateNotification>(
+                      onNotification: (_) {
+                        FocusScope.of(context).unfocus();
+                        return false;
+                      },
+                      child: ListView.builder(
+                        controller: scrollController,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          final message = messages[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _ChatBubble(message: message),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      12,
+                      10,
+                      12,
+                      bottomInset > 0 ? 10 : 12,
+                    ),
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: Color(0xFFF0E8E4)),
+                      ),
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F3F0),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              onPressed: onAttachTap,
+                              icon: const Icon(
+                                Icons.add_circle_outline,
+                                color: _ProjectDetailScreenState.kSub,
+                              ),
+                            ),
+                            Expanded(
+                              child: TextField(
+                                controller: controller,
+                                minLines: 1,
+                                maxLines: 4,
+                                textInputAction: TextInputAction.newline,
+                                decoration: const InputDecoration(
+                                  hintText: '진행 상황을 공유하세요...',
+                                  hintStyle: TextStyle(
+                                    color: _ProjectDetailScreenState.kSub,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  border: InputBorder.none,
+                                ),
+                                onTapOutside: (_) =>
+                                    FocusScope.of(context).unfocus(),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: onSendTap,
+                              icon: const Icon(
+                                Icons.send_rounded,
+                                color: _ProjectDetailScreenState.kWine,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -3187,6 +3662,7 @@ class _DialogField extends StatelessWidget {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          onTapOutside: (_) => FocusScope.of(context).unfocus(),
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: const TextStyle(
