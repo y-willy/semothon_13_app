@@ -42,7 +42,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   int selectedTabIndex = 0;
   int? expandedRoleIndex = 0;
-  int unreadChatCount = 2;
 
   late String projectTitle;
   final TextEditingController chatController = TextEditingController();
@@ -96,6 +95,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       message: '역할별 업무를 아직 만들지 않았어요. 역할 탭에서 수동으로 추가하거나 AI 자동생성을 눌러보세요.',
       isAi: true,
       isFile: false,
+      isRead: false,
     ),
   ];
 
@@ -105,12 +105,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       body: '새로운 진행 상황 메시지가 있어요.',
       type: 'chat',
       createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+      isRead: false,
     ),
     _AppNotification(
       title: '업무 완료',
       body: '김민준님이 참고자료 찾기 업무를 완료했어요.',
       type: 'task',
       createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+      isRead: false,
     ),
   ];
 
@@ -217,6 +219,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         .toList();
   }
 
+  int get unreadChatCount {
+    return chatMessages
+        .where((message) => message.sender != '나' && !message.isRead)
+        .length;
+  }
+
+  int get unreadNotificationCount {
+    return notifications.where((item) => !item.isRead).length;
+  }
+
   String get summaryStatus {
     if (overdueTaskCount > 0) return '기한 지난 업무 $overdueTaskCount개';
     if (urgentTaskCount > 0) return '마감 임박 업무 $urgentTaskCount개';
@@ -262,6 +274,20 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     }
   }
 
+  void _markAllChatAsRead() {
+    for (final message in chatMessages) {
+      if (message.sender != '나') {
+        message.isRead = true;
+      }
+    }
+  }
+
+  void _markAllNotificationsAsRead() {
+    for (final item in notifications) {
+      item.isRead = true;
+    }
+  }
+
   void toggleTask(int roleIndex, int taskIndex) {
     final role = roles[roleIndex];
     final task = role.tasks[taskIndex];
@@ -279,6 +305,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             body: '${role.assignee}님이 ${task.title} 업무를 완료했어요.',
             type: 'task',
             createdAt: DateTime.now(),
+            isRead: false,
           ),
         );
       }
@@ -315,8 +342,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           roleTag: null,
           isAi: false,
           isFile: false,
+          isRead: true,
         ),
       );
+
       notifications.insert(
         0,
         _AppNotification(
@@ -324,9 +353,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           body: '새로운 진행 상황 메시지가 추가되었어요.',
           type: 'chat',
           createdAt: DateTime.now(),
+          isRead: false,
         ),
       );
-      unreadChatCount += 1;
+
       chatController.clear();
     });
   }
@@ -349,8 +379,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           roleTag: null,
           isAi: false,
           isFile: true,
+          isRead: true,
         ),
       );
+
       notifications.insert(
         0,
         _AppNotification(
@@ -358,9 +390,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           body: '새로운 파일이 공유되었어요.',
           type: 'chat',
           createdAt: DateTime.now(),
+          isRead: false,
         ),
       );
-      unreadChatCount += 1;
     });
   }
 
@@ -697,7 +729,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.25),
+      barrierColor: Colors.black.withOpacity(0.25),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setInnerState) {
@@ -824,7 +856,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.25),
+      barrierColor: Colors.black.withOpacity(0.25),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setInnerState) {
@@ -1286,6 +1318,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   void showNotificationSheet() {
+    setState(() {
+      _markAllNotificationsAsRead();
+    });
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1341,8 +1377,15 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           return Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8F3F0),
+                              color: item.isRead
+                                  ? const Color(0xFFF8F3F0)
+                                  : const Color(0xFFFFF3EE),
                               borderRadius: BorderRadius.circular(18),
+                              border: item.isRead
+                                  ? null
+                                  : Border.all(
+                                      color: const Color(0xFFFFD6C7),
+                                    ),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1379,6 +1422,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                     ],
                                   ),
                                 ),
+                                if (!item.isRead)
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    margin: const EdgeInsets.only(top: 6),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
                               ],
                             ),
                           );
@@ -1588,6 +1641,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               onBellTap: showNotificationSheet,
               statusColor: statusColor(summaryStatus),
               onStatusTap: showUrgentTasksSheet,
+              unreadNotificationCount: unreadNotificationCount,
             ),
             _TopTabBar(
               selectedIndex: selectedTabIndex,
@@ -1596,7 +1650,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 setState(() {
                   selectedTabIndex = index;
                   if (index == 2) {
-                    unreadChatCount = 0;
+                    _markAllChatAsRead();
                   }
                 });
               },
@@ -1621,6 +1675,7 @@ class _HeaderSection extends StatelessWidget {
   final VoidCallback onBellTap;
   final VoidCallback onStatusTap;
   final Color statusColor;
+  final int unreadNotificationCount;
 
   const _HeaderSection({
     required this.projectTitle,
@@ -1629,6 +1684,7 @@ class _HeaderSection extends StatelessWidget {
     required this.onBellTap,
     required this.onStatusTap,
     required this.statusColor,
+    required this.unreadNotificationCount,
   });
 
   @override
@@ -1667,14 +1723,54 @@ class _HeaderSection extends StatelessWidget {
               InkWell(
                 onTap: onBellTap,
                 borderRadius: BorderRadius.circular(20),
-                child: Container(
+                child: SizedBox(
                   width: 40,
                   height: 40,
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.notifications_none_rounded,
-                    color: Colors.white,
-                    size: 24,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Center(
+                        child: Icon(
+                          Icons.notifications_none_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      if (unreadNotificationCount > 0)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: _ProjectDetailScreenState.kWine,
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Text(
+                              unreadNotificationCount > 9
+                                  ? '9+'
+                                  : '$unreadNotificationCount',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -2902,19 +2998,37 @@ class _ChatBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: isAi ? const Color(0xFFF9F1FF) : const Color(0xFFF8F3F0),
             borderRadius: BorderRadius.circular(18),
+            border: !message.isRead && message.sender != '나'
+                ? Border.all(color: const Color(0xFFD7B7F5))
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                message.sender,
-                style: TextStyle(
-                  color: isAi
-                      ? const Color(0xFF7B3CB0)
-                      : _ProjectDetailScreenState.kText,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
+              Row(
+                children: [
+                  Text(
+                    message.sender,
+                    style: TextStyle(
+                      color: isAi
+                          ? const Color(0xFF7B3CB0)
+                          : _ProjectDetailScreenState.kText,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (!message.isRead && message.sender != '나') ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ],
               ),
               if (message.roleTag != null) ...[
                 const SizedBox(height: 6),
@@ -3334,6 +3448,7 @@ class _ChatMessage {
   final String? roleTag;
   final bool isAi;
   final bool isFile;
+  bool isRead;
 
   _ChatMessage({
     required this.sender,
@@ -3342,6 +3457,7 @@ class _ChatMessage {
     this.roleTag,
     required this.isAi,
     required this.isFile,
+    required this.isRead,
   });
 }
 
@@ -3366,11 +3482,13 @@ class _AppNotification {
   final String body;
   final String type;
   final DateTime createdAt;
+  bool isRead;
 
   _AppNotification({
     required this.title,
     required this.body,
     required this.type,
     required this.createdAt,
+    required this.isRead,
   });
 }
