@@ -1,4 +1,12 @@
 import 'package:flutter/material.dart';
+
+import '../models/app_notification_model.dart';
+import '../models/chat_message_model.dart';
+import '../models/member_model.dart';
+import '../models/project_detail_model.dart';
+import '../models/role_model.dart';
+import '../models/schedule_model.dart';
+import '../models/task_model.dart';
 import 'project_detail_screen.dart';
 
 class ProjectListScreen extends StatefulWidget {
@@ -18,35 +26,232 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
   static const Color kSoftCard = Color(0xFFFCFBFB);
   static const Color kInputFill = Color(0xFFF9F1F1);
 
-  late List<_ProjectCardData> projects = [
-    _ProjectCardData(
-      number: '#13',
+  late List<ProjectDetailModel> projects = [
+    _sampleProject(
+      projectNumber: '13',
       title: '세계와 시민',
-      status: '진행 중',
       memberCount: 4,
       roleCount: 3,
       scheduleCount: 2,
-      updatedText: '최근 업데이트 오늘',
+      statusSeed: '진행 중',
     ),
-    _ProjectCardData(
-      number: '#12',
+    _sampleProject(
+      projectNumber: '12',
       title: '소프트웨어공학',
-      status: '마감 임박 업무 2개',
       memberCount: 5,
       roleCount: 3,
       scheduleCount: 2,
-      updatedText: '최근 업데이트 2시간 전',
+      statusSeed: '마감 임박 업무 2개',
     ),
-    _ProjectCardData(
-      number: '#7',
+    _sampleProject(
+      projectNumber: '7',
       title: '데이터베이스',
-      status: '기한 지난 업무 1개',
       memberCount: 3,
       roleCount: 2,
       scheduleCount: 1,
-      updatedText: '최근 업데이트 어제',
+      statusSeed: '기한 지난 업무 1개',
     ),
   ];
+
+  static ProjectDetailModel _sampleProject({
+    required String projectNumber,
+    required String title,
+    required int memberCount,
+    required int roleCount,
+    required int scheduleCount,
+    required String statusSeed,
+  }) {
+    final now = DateTime.now();
+
+    final members = List.generate(
+      memberCount,
+      (index) => MemberModel(
+        id: index + 1,
+        name: '팀원 ${index + 1}',
+        studentId: '2020${(1000 + index).toString()}',
+      ),
+    );
+
+    final schedules = List.generate(
+      scheduleCount,
+      (index) => ScheduleModel(
+        id: index + 1,
+        title: '일정 ${index + 1}',
+        date: now.add(Duration(days: index + 1)),
+        startTime: const TimeOfDay(hour: 14, minute: 0),
+        endTime: const TimeOfDay(hour: 16, minute: 0),
+      ),
+    );
+
+    List<RoleModel> roles;
+    if (statusSeed.contains('기한 지난')) {
+      roles = List.generate(
+        roleCount,
+        (index) => RoleModel(
+          id: index + 1,
+          title: '역할 ${index + 1}',
+          assignee: members[index % members.length].name,
+          status: index == 0 ? '지연' : '진행 중',
+          tasks: [
+            TaskModel(
+              id: (index + 1) * 100 + 1,
+              title: '업무 ${index + 1}-1',
+              priority: '높음',
+              dueDate: now.subtract(const Duration(days: 1)),
+              done: false,
+              source: '수동',
+            ),
+          ],
+        ),
+      );
+    } else if (statusSeed.contains('마감 임박')) {
+      roles = List.generate(
+        roleCount,
+        (index) => RoleModel(
+          id: index + 1,
+          title: '역할 ${index + 1}',
+          assignee: members[index % members.length].name,
+          status: index == 0 ? '마감 임박' : '진행 중',
+          tasks: [
+            TaskModel(
+              id: (index + 1) * 100 + 1,
+              title: '업무 ${index + 1}-1',
+              priority: '높음',
+              dueDate: now.add(const Duration(days: 1)),
+              done: false,
+              source: '수동',
+            ),
+          ],
+        ),
+      );
+    } else if (statusSeed.contains('완료')) {
+      roles = List.generate(
+        roleCount,
+        (index) => RoleModel(
+          id: index + 1,
+          title: '역할 ${index + 1}',
+          assignee: members[index % members.length].name,
+          status: '완료',
+          tasks: [
+            TaskModel(
+              id: (index + 1) * 100 + 1,
+              title: '업무 ${index + 1}-1',
+              priority: '보통',
+              dueDate: now.subtract(const Duration(days: 2)),
+              done: true,
+              source: '수동',
+            ),
+          ],
+        ),
+      );
+    } else if (statusSeed.contains('준비')) {
+      roles = List.generate(
+        roleCount,
+        (index) => RoleModel(
+          id: index + 1,
+          title: '역할 ${index + 1}',
+          assignee: members[index % members.length].name,
+          status: '시작 전',
+          tasks: const [],
+        ),
+      );
+    } else {
+      roles = List.generate(
+        roleCount,
+        (index) => RoleModel(
+          id: index + 1,
+          title: '역할 ${index + 1}',
+          assignee: members[index % members.length].name,
+          status: '진행 중',
+          tasks: [
+            TaskModel(
+              id: (index + 1) * 100 + 1,
+              title: '업무 ${index + 1}-1',
+              priority: '보통',
+              dueDate: now.add(Duration(days: index + 2)),
+              done: index == 0,
+              source: '수동',
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ProjectDetailModel(
+      projectNumber: projectNumber,
+      projectTitle: title,
+      projectGoal: '',
+      members: members,
+      schedules: schedules,
+      roles: roles,
+      chatMessages: [
+        ChatMessageModel(
+          id: 1,
+          sender: 'AI 코치',
+          time: '오후 04:25',
+          message: '프로젝트를 시작해보세요. 역할을 정하고 업무를 배분하면 더 편하게 관리할 수 있어요.',
+          roleTag: null,
+          isAi: true,
+          isFile: false,
+          isRead: false,
+        ),
+      ],
+      notifications: [
+        AppNotificationModel(
+          id: 1,
+          title: '프로젝트 생성',
+          body: '$title 프로젝트가 준비되어 있어요.',
+          type: 'project',
+          createdAt: now,
+          isRead: false,
+        ),
+      ],
+    );
+  }
+
+  String _summaryStatus(ProjectDetailModel project) {
+    int overdueTaskCount = 0;
+    int urgentTaskCount = 0;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    for (final role in project.roles) {
+      for (final task in role.tasks) {
+        if (task.done) continue;
+
+        final due = DateTime(
+          task.dueDate.year,
+          task.dueDate.month,
+          task.dueDate.day,
+        );
+
+        if (due.isBefore(today)) {
+          overdueTaskCount++;
+        } else if (due == tomorrow) {
+          urgentTaskCount++;
+        }
+      }
+    }
+
+    if (overdueTaskCount > 0) return '기한 지난 업무 $overdueTaskCount개';
+    if (urgentTaskCount > 0) return '마감 임박 업무 $urgentTaskCount개';
+
+    final delayedCount =
+        project.roles.where((role) => role.status == '지연').length;
+    if (delayedCount > 0) return '역할 $delayedCount개 지연';
+
+    final completedCount = project.roles.isNotEmpty &&
+            project.roles.every((role) => role.status == '완료')
+        ? true
+        : false;
+
+    if (completedCount) return '완료';
+    if (project.roles.every((role) => role.tasks.isEmpty)) return '준비 중';
+
+    return '진행 중';
+  }
 
   Color _statusColor(String status) {
     if (status.contains('기한 지난')) return const Color(0xFFFF6B2C);
@@ -57,135 +262,156 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
     return kWine;
   }
 
+  String _updatedText(ProjectDetailModel project) {
+    if (project.notifications.isEmpty) return '최근 업데이트 없음';
+
+    final latest = project.notifications.first.createdAt;
+    final diff = DateTime.now().difference(latest);
+
+    if (diff.inMinutes < 1) return '최근 업데이트 방금';
+    if (diff.inHours < 1) return '최근 업데이트 ${diff.inMinutes}분 전';
+    if (diff.inDays < 1) return '최근 업데이트 ${diff.inHours}시간 전';
+    if (diff.inDays == 1) return '최근 업데이트 어제';
+    return '최근 업데이트 ${diff.inDays}일 전';
+  }
+
   void _showAddProjectDialog() {
     final titleController = TextEditingController();
-    String selectedStatus = '준비 중';
 
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.25),
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setInnerState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '새 프로젝트 추가',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: kText,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _DialogField(
+                  controller: titleController,
+                  label: '프로젝트 이름',
+                  hintText: '예: 운영체제 팀플',
+                ),
+                const SizedBox(height: 22),
+                Row(
                   children: [
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '새 프로젝트 추가',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: kText,
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                          side: const BorderSide(color: kBorder),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          '취소',
+                          style: TextStyle(
+                            color: kSub,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    _DialogField(
-                      controller: titleController,
-                      label: '프로젝트 이름',
-                      hintText: '예: 운영체제 팀플',
-                    ),
-                    const SizedBox(height: 14),
-                    _StatusDropdownField(
-                      label: '상태',
-                      value: selectedStatus,
-                      items: const [
-                        '준비 중',
-                        '진행 중',
-                        '마감 임박 업무 1개',
-                        '기한 지난 업무 1개',
-                        '완료',
-                      ],
-                      onChanged: (value) {
-                        setInnerState(() {
-                          selectedStatus = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 22),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                              side: const BorderSide(color: kBorder),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              '취소',
-                              style: TextStyle(
-                                color: kSub,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              final title = titleController.text.trim();
-                              if (title.isEmpty) return;
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final title = titleController.text.trim();
+                          if (title.isEmpty) return;
 
-                              setState(() {
-                                final nextNumber = '#${projects.length + 1}';
-                                projects.insert(
-                                  0,
-                                  _ProjectCardData(
-                                    number: nextNumber,
-                                    title: title,
-                                    status: selectedStatus,
-                                    memberCount: 1,
-                                    roleCount: 0,
-                                    scheduleCount: 0,
-                                    updatedText: '방금 생성됨',
+                          setState(() {
+                            final nextNumber = '${projects.length + 1}';
+                            projects.insert(
+                              0,
+                              ProjectDetailModel(
+                                projectNumber: nextNumber,
+                                projectTitle: title,
+                                projectGoal: '',
+                                members: [
+                                  MemberModel(
+                                    id: 1,
+                                    name: '나',
+                                    studentId: '2024000000',
                                   ),
-                                );
-                              });
-
-                              Navigator.pop(context);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: kWine,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              minimumSize: const Size.fromHeight(48),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                ],
+                                schedules: const [],
+                                roles: const [],
+                                chatMessages: [
+                                  ChatMessageModel(
+                                    id: 1,
+                                    sender: 'AI 코치',
+                                    time: '오후 04:25',
+                                    message:
+                                        '프로젝트가 생성되었어요. 이제 팀원, 일정, 역할을 추가해보세요.',
+                                    roleTag: null,
+                                    isAi: true,
+                                    isFile: false,
+                                    isRead: false,
+                                  ),
+                                ],
+                                notifications: [
+                                  AppNotificationModel(
+                                    id: 1,
+                                    title: '프로젝트 생성',
+                                    body: '$title 프로젝트가 생성되었어요.',
+                                    type: 'project',
+                                    createdAt: DateTime.now(),
+                                    isRead: false,
+                                  ),
+                                ],
                               ),
-                            ),
-                            child: const Text(
-                              '추가',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
+                            );
+                          });
+
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kWine,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          minimumSize: const Size.fromHeight(48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                      ],
+                        child: const Text(
+                          '추가',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         );
       },
     );
   }
 
   void _showEditProjectDialog(int index) {
-    final controller = TextEditingController(text: projects[index].title);
+    final controller = TextEditingController(
+      text: projects[index].projectTitle,
+    );
 
     showDialog(
       context: context,
@@ -247,8 +473,20 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                           if (newTitle.isEmpty) return;
 
                           setState(() {
-                            projects[index].title = newTitle;
-                            projects[index].updatedText = '방금 이름 수정';
+                            projects[index] = projects[index].copyWith(
+                              projectTitle: newTitle,
+                              notifications: [
+                                AppNotificationModel(
+                                  id: DateTime.now().millisecondsSinceEpoch,
+                                  title: '프로젝트 수정',
+                                  body: '프로젝트 이름이 수정되었어요.',
+                                  type: 'project',
+                                  createdAt: DateTime.now(),
+                                  isRead: false,
+                                ),
+                                ...projects[index].notifications,
+                              ],
+                            );
                           });
 
                           Navigator.pop(context);
@@ -273,114 +511,6 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  void _showEditStatusDialog(int index) {
-    String selectedStatus = projects[index].status;
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.25),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setInnerState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '상태 수정',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: kText,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    _StatusDropdownField(
-                      label: '상태',
-                      value: selectedStatus,
-                      items: const [
-                        '준비 중',
-                        '진행 중',
-                        '마감 임박 업무 1개',
-                        '마감 임박 업무 2개',
-                        '기한 지난 업무 1개',
-                        '역할 1개 지연',
-                        '완료',
-                      ],
-                      onChanged: (value) {
-                        setInnerState(() {
-                          selectedStatus = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 22),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                              side: const BorderSide(color: kBorder),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              '취소',
-                              style: TextStyle(
-                                color: kSub,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                projects[index].status = selectedStatus;
-                                projects[index].updatedText = '방금 상태 수정';
-                              });
-
-                              Navigator.pop(context);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: kWine,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              minimumSize: const Size.fromHeight(48),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              '저장',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
         );
       },
     );
@@ -415,7 +545,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    '\'${projects[index].title}\' 프로젝트를 삭제할까요?',
+                    '\'${projects[index].projectTitle}\' 프로젝트를 삭제할까요?',
                     style: const TextStyle(
                       fontSize: 15,
                       color: kSub,
@@ -508,11 +638,6 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                 onTap: () => Navigator.pop(context, 'edit_name'),
               ),
               _MenuTile(
-                icon: Icons.flag_outlined,
-                title: '상태 수정',
-                onTap: () => Navigator.pop(context, 'edit_status'),
-              ),
-              _MenuTile(
                 icon: Icons.delete_outline,
                 title: '삭제',
                 textColor: const Color(0xFFD94A3A),
@@ -526,11 +651,77 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
 
     if (action == 'edit_name') {
       _showEditProjectDialog(index);
-    } else if (action == 'edit_status') {
-      _showEditStatusDialog(index);
     } else if (action == 'delete') {
       _showDeleteDialog(index);
     }
+  }
+
+  Widget _buildTopSection(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.arrow_back_ios_new,
+                  size: 16,
+                  color: kSub,
+                ),
+                SizedBox(width: 4),
+                Text(
+                  '홈으로',
+                  style: TextStyle(
+                    color: kSub,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const Text(
+          '프로젝트',
+          style: TextStyle(
+            color: kText,
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIntroCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      decoration: BoxDecoration(
+        color: kSoftCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFEAE1E1)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: const Text(
+        '현재 진행 중인 프로젝트와 상태를 한눈에 확인하고, 필요하면 이름을 바로 수정해보세요.',
+        style: TextStyle(
+          fontSize: 15,
+          color: Color(0xFF4B3A3A),
+          height: 1.5,
+        ),
+      ),
+    );
   }
 
   @override
@@ -603,23 +794,37 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                             separatorBuilder: (_, __) =>
                                 const SizedBox(height: 14),
                             itemBuilder: (context, index) {
-                              final item = projects[index];
+                              final project = projects[index];
+                              final summaryStatus = _summaryStatus(project);
+
                               return _ProjectCard(
-                                item: item,
-                                statusColor: _statusColor(item.status),
-                                onTap: () {
-                                  Navigator.push(
+                                number: '#${project.projectNumber}',
+                                title: project.projectTitle,
+                                status: summaryStatus,
+                                statusColor: _statusColor(summaryStatus),
+                                memberCount: project.members.length,
+                                roleCount: project.roles.length,
+                                scheduleCount: project.schedules.length,
+                                updatedText: _updatedText(project),
+                                onTap: () async {
+                                  final result =
+                                      await Navigator.push<ProjectDetailModel>(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => ProjectDetailScreen(
-                                        projectNumber: item.number,
-                                        projectTitle: item.title,
-                                        projectGoal: '',
+                                        project: project,
                                       ),
                                     ),
                                   );
+
+                                  if (result != null) {
+                                    setState(() {
+                                      projects[index] = result;
+                                    });
+                                  }
                                 },
-                                onMoreTap: () => _showProjectMenu(context, index),
+                                onMoreTap: () =>
+                                    _showProjectMenu(context, index),
                               );
                             },
                           ),
@@ -632,87 +837,29 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
       ),
     );
   }
-Widget _buildTopSection(BuildContext context) {
-  return Stack(
-    alignment: Alignment.center,
-    children: [
-      // 왼쪽: 홈으로 버튼
-      Align(
-        alignment: Alignment.centerLeft,
-        child: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.arrow_back_ios_new,
-                size: 16,
-                color: kSub,
-              ),
-              SizedBox(width: 4),
-              Text(
-                '홈으로',
-                style: TextStyle(
-                  color: kSub,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-
-      // 가운데: 제목
-      const Text(
-        '프로젝트',
-        style: TextStyle(
-          color: kText,
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    ],
-  );
-}
-
-  Widget _buildIntroCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      decoration: BoxDecoration(
-        color: kSoftCard,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFEAE1E1)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: const Text(
-        '현재 진행 중인 프로젝트와 상태를 한눈에 확인하고, 필요하면 이름이나 상태를 바로 수정해보세요.',
-        style: TextStyle(
-          fontSize: 15,
-          color: Color(0xFF4B3A3A),
-          height: 1.5,
-        ),
-      ),
-    );
-  }
 }
 
 class _ProjectCard extends StatelessWidget {
-  final _ProjectCardData item;
+  final String number;
+  final String title;
+  final String status;
   final Color statusColor;
+  final int memberCount;
+  final int roleCount;
+  final int scheduleCount;
+  final String updatedText;
   final VoidCallback onTap;
   final VoidCallback onMoreTap;
 
   const _ProjectCard({
-    required this.item,
+    required this.number,
+    required this.title,
+    required this.status,
     required this.statusColor,
+    required this.memberCount,
+    required this.roleCount,
+    required this.scheduleCount,
+    required this.updatedText,
     required this.onTap,
     required this.onMoreTap,
   });
@@ -746,7 +893,7 @@ class _ProjectCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      item.title,
+                      title,
                       style: const TextStyle(
                         color: _ProjectListScreenState.kText,
                         fontSize: 20,
@@ -775,7 +922,7 @@ class _ProjectCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                item.number,
+                number,
                 style: const TextStyle(
                   color: _ProjectListScreenState.kSub,
                   fontSize: 13,
@@ -793,7 +940,7 @@ class _ProjectCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  item.status,
+                  status,
                   style: TextStyle(
                     color: statusColor,
                     fontSize: 13,
@@ -803,7 +950,7 @@ class _ProjectCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                item.updatedText,
+                updatedText,
                 style: const TextStyle(
                   color: _ProjectListScreenState.kSub,
                   fontSize: 13,
@@ -819,15 +966,15 @@ class _ProjectCard extends StatelessWidget {
                 children: [
                   _InfoChip(
                     icon: Icons.group_outlined,
-                    text: '${item.memberCount}명',
+                    text: '$memberCount명',
                   ),
                   _InfoChip(
                     icon: Icons.work_outline,
-                    text: '역할 ${item.roleCount}개',
+                    text: '역할 $roleCount개',
                   ),
                   _InfoChip(
                     icon: Icons.calendar_today_outlined,
-                    text: '일정 ${item.scheduleCount}개',
+                    text: '일정 $scheduleCount개',
                   ),
                 ],
               ),
@@ -939,65 +1086,6 @@ class _DialogField extends StatelessWidget {
   }
 }
 
-class _StatusDropdownField extends StatelessWidget {
-  final String label;
-  final String value;
-  final List<String> items;
-  final ValueChanged<String> onChanged;
-
-  const _StatusDropdownField({
-    required this.label,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: _ProjectListScreenState.kSub,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: _ProjectListScreenState.kInputFill,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _ProjectListScreenState.kBorder),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              isExpanded: true,
-              items: items
-                  .map(
-                    (item) => DropdownMenuItem<String>(
-                      value: item,
-                      child: Text(item),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (changed) {
-                if (changed != null) {
-                  onChanged(changed);
-                }
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _MenuTile extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -1081,24 +1169,4 @@ class _EmptyProjectView extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ProjectCardData {
-  final String number;
-  String title;
-  String status;
-  int memberCount;
-  int roleCount;
-  int scheduleCount;
-  String updatedText;
-
-  _ProjectCardData({
-    required this.number,
-    required this.title,
-    required this.status,
-    required this.memberCount,
-    required this.roleCount,
-    required this.scheduleCount,
-    required this.updatedText,
-  });
 }

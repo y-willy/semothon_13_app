@@ -1,4 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+
+import '../models/app_notification_model.dart';
+import '../models/chat_message_model.dart';
+import '../models/member_model.dart';
+import '../models/project_detail_model.dart';
+import '../models/role_model.dart';
+import '../models/schedule_model.dart';
+import '../models/task_model.dart';
 
 String formatDate(DateTime date) {
   return '${date.month}월 ${date.day}일';
@@ -12,15 +21,11 @@ String formatTimeOfDay(TimeOfDay time) {
 }
 
 class ProjectDetailScreen extends StatefulWidget {
-  final String projectNumber;
-  final String projectTitle;
-  final String projectGoal;
+  final ProjectDetailModel project;
 
   const ProjectDetailScreen({
     super.key,
-    required this.projectNumber,
-    required this.projectTitle,
-    required this.projectGoal,
+    required this.project,
   });
 
   @override
@@ -42,90 +47,36 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   int selectedTabIndex = 0;
   int? expandedRoleIndex = 0;
-  int unreadChatCount = 2;
 
-  late String projectTitle;
+  late ProjectDetailModel project;
   final TextEditingController chatController = TextEditingController();
-
-  late List<_MemberItem> members = [
-    _MemberItem(name: '김민준', studentId: '2020123456'),
-    _MemberItem(name: '이서연', studentId: '2020123457'),
-    _MemberItem(name: '박지호', studentId: '2020123458'),
-  ];
-
-  late List<_ScheduleItem> schedules = [
-    _ScheduleItem(
-      title: '중간 점검 회의',
-      date: DateTime.now().add(const Duration(days: 1)),
-      startTime: const TimeOfDay(hour: 14, minute: 0),
-      endTime: const TimeOfDay(hour: 16, minute: 0),
-    ),
-    _ScheduleItem(
-      title: '최종 리허설',
-      date: DateTime.now().add(const Duration(days: 4)),
-      startTime: const TimeOfDay(hour: 15, minute: 0),
-      endTime: const TimeOfDay(hour: 17, minute: 0),
-    ),
-  ];
-
-  late List<_RoleItem> roles = [
-    _RoleItem(
-      title: '자료조사',
-      assignee: '김민준',
-      status: '시작 전',
-      tasks: [],
-    ),
-    _RoleItem(
-      title: '발표 자료 제작',
-      assignee: '이서연',
-      status: '시작 전',
-      tasks: [],
-    ),
-    _RoleItem(
-      title: '발표자',
-      assignee: '박지호',
-      status: '시작 전',
-      tasks: [],
-    ),
-  ];
-
-  late List<_ChatMessage> chatMessages = [
-    _ChatMessage(
-      sender: 'AI 코치',
-      time: '오후 04:25',
-      message: '역할별 업무를 아직 만들지 않았어요. 역할 탭에서 수동으로 추가하거나 AI 자동생성을 눌러보세요.',
-      isAi: true,
-      isFile: false,
-    ),
-  ];
-
-  late List<_AppNotification> notifications = [
-    _AppNotification(
-      title: '새 채팅 알림',
-      body: '새로운 진행 상황 메시지가 있어요.',
-      type: 'chat',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-    ),
-    _AppNotification(
-      title: '업무 완료',
-      body: '김민준님이 참고자료 찾기 업무를 완료했어요.',
-      type: 'task',
-      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-    ),
-  ];
+  final ScrollController chatScrollController = ScrollController();
+  final FocusNode chatFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    projectTitle = widget.projectTitle;
+    project = widget.project;
     _refreshAllRoleStatuses();
+    chatFocusNode.addListener(() {
+      if (!mounted) return;
+      setState(() {});
+    });
   }
 
   @override
   void dispose() {
     chatController.dispose();
+    chatScrollController.dispose();
+    chatFocusNode.dispose();
     super.dispose();
   }
+
+  List<MemberModel> get members => project.members;
+  List<ScheduleModel> get schedules => project.schedules;
+  List<RoleModel> get roles => project.roles;
+  List<ChatMessageModel> get chatMessages => project.chatMessages;
+  List<AppNotificationModel> get notifications => project.notifications;
 
   Color statusColor(String status) {
     switch (status) {
@@ -142,15 +93,15 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     }
   }
 
-  int completedTaskCount(_RoleItem role) {
+  int completedTaskCount(RoleModel role) {
     return role.tasks.where((task) => task.done).length;
   }
 
-  int totalTaskCount(_RoleItem role) {
+  int totalTaskCount(RoleModel role) {
     return role.tasks.length;
   }
 
-  bool isDueTomorrow(_TaskItem task) {
+  bool isDueTomorrow(TaskModel task) {
     if (task.done) return false;
     final now = DateTime.now();
     final tomorrow =
@@ -160,7 +111,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return due == tomorrow;
   }
 
-  bool isOverdue(_TaskItem task) {
+  bool isOverdue(TaskModel task) {
     if (task.done) return false;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -209,12 +160,22 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return items;
   }
 
-  List<_ChatMessage> get fileMessages {
+  List<ChatMessageModel> get fileMessages {
     return chatMessages
         .where((message) => message.isFile)
         .toList()
         .reversed
         .toList();
+  }
+
+  int get unreadChatCount {
+    return chatMessages
+        .where((message) => message.sender != '나' && !message.isRead)
+        .length;
+  }
+
+  int get unreadNotificationCount {
+    return notifications.where((item) => !item.isRead).length;
   }
 
   String get summaryStatus {
@@ -225,6 +186,26 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return '전체 흐름 안정적';
   }
 
+  void _updateProject({
+    List<MemberModel>? members,
+    List<ScheduleModel>? schedules,
+    List<RoleModel>? roles,
+    List<ChatMessageModel>? chatMessages,
+    List<AppNotificationModel>? notifications,
+    String? projectTitle,
+    String? projectGoal,
+  }) {
+    project = project.copyWith(
+      members: members,
+      schedules: schedules,
+      roles: roles,
+      chatMessages: chatMessages,
+      notifications: notifications,
+      projectTitle: projectTitle,
+      projectGoal: projectGoal,
+    );
+  }
+
   void _refreshRoleStatus(int roleIndex) {
     final role = roles[roleIndex];
     final completed = completedTaskCount(role);
@@ -233,33 +214,72 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final hasOverdue = role.tasks.any(isOverdue);
     final hasUrgent = role.tasks.any(isDueTomorrow);
 
+    String newStatus = '시작 전';
+
     if (hasOverdue) {
-      role.status = '지연';
-      return;
+      newStatus = '지연';
+    } else if (completed == total && total > 0) {
+      newStatus = '완료';
+    } else if (hasUrgent && completed < total) {
+      newStatus = '마감 임박';
+    } else if (completed == 0 && total > 0) {
+      newStatus = '시작 전';
+    } else if (completed > 0 && completed < total) {
+      newStatus = '진행 중';
     }
-    if (completed == total && total > 0) {
-      role.status = '완료';
-      return;
-    }
-    if (hasUrgent && completed < total) {
-      role.status = '마감 임박';
-      return;
-    }
-    if (completed == 0 && total > 0) {
-      role.status = '시작 전';
-      return;
-    }
-    if (completed > 0 && completed < total) {
-      role.status = '진행 중';
-      return;
-    }
-    role.status = '시작 전';
+
+    final updatedRoles = [...roles];
+    updatedRoles[roleIndex] = role.copyWith(status: newStatus);
+    _updateProject(roles: updatedRoles);
   }
 
   void _refreshAllRoleStatuses() {
-    for (int i = 0; i < roles.length; i++) {
-      _refreshRoleStatus(i);
+    var updatedRoles = [...roles];
+
+    for (int i = 0; i < updatedRoles.length; i++) {
+      final role = updatedRoles[i];
+      final completed = role.tasks.where((task) => task.done).length;
+      final total = role.tasks.length;
+
+      final hasOverdue = role.tasks.any(isOverdue);
+      final hasUrgent = role.tasks.any(isDueTomorrow);
+
+      String newStatus = '시작 전';
+
+      if (hasOverdue) {
+        newStatus = '지연';
+      } else if (completed == total && total > 0) {
+        newStatus = '완료';
+      } else if (hasUrgent && completed < total) {
+        newStatus = '마감 임박';
+      } else if (completed == 0 && total > 0) {
+        newStatus = '시작 전';
+      } else if (completed > 0 && completed < total) {
+        newStatus = '진행 중';
+      }
+
+      updatedRoles[i] = role.copyWith(status: newStatus);
     }
+
+    _updateProject(roles: updatedRoles);
+  }
+
+  void _markAllChatAsRead() {
+    final updatedMessages = chatMessages
+        .map(
+          (message) =>
+              message.sender != '나' ? message.copyWith(isRead: true) : message,
+        )
+        .toList();
+
+    _updateProject(chatMessages: updatedMessages);
+  }
+
+  void _markAllNotificationsAsRead() {
+    final updatedNotifications =
+        notifications.map((item) => item.copyWith(isRead: true)).toList();
+
+    _updateProject(notifications: updatedNotifications);
   }
 
   void toggleTask(int roleIndex, int taskIndex) {
@@ -267,21 +287,35 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final task = role.tasks[taskIndex];
     final wasDone = task.done;
 
-    setState(() {
-      task.done = !task.done;
-      _refreshRoleStatus(roleIndex);
+    final updatedTasks = [...role.tasks];
+    updatedTasks[taskIndex] = task.copyWith(done: !task.done);
 
-      if (!wasDone && task.done) {
-        notifications.insert(
-          0,
-          _AppNotification(
-            title: '업무 완료',
-            body: '${role.assignee}님이 ${task.title} 업무를 완료했어요.',
-            type: 'task',
-            createdAt: DateTime.now(),
-          ),
-        );
-      }
+    final updatedRole = role.copyWith(tasks: updatedTasks);
+    final updatedRoles = [...roles];
+    updatedRoles[roleIndex] = updatedRole;
+
+    final updatedNotifications = [...notifications];
+
+    if (!wasDone && !task.done) {
+      updatedNotifications.insert(
+        0,
+        AppNotificationModel(
+          id: DateTime.now().millisecondsSinceEpoch,
+          title: '업무 완료',
+          body: '${role.assignee}님이 ${task.title} 업무를 완료했어요.',
+          type: 'task',
+          createdAt: DateTime.now(),
+          isRead: false,
+        ),
+      );
+    }
+
+    setState(() {
+      _updateProject(
+        roles: updatedRoles,
+        notifications: updatedNotifications,
+      );
+      _refreshRoleStatus(roleIndex);
     });
   }
 
@@ -289,8 +323,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final role = roles[roleIndex];
     final removedTaskTitle = role.tasks[taskIndex].title;
 
+    final updatedTasks = [...role.tasks]..removeAt(taskIndex);
+    final updatedRoles = [...roles];
+    updatedRoles[roleIndex] = role.copyWith(tasks: updatedTasks);
+
     setState(() {
-      role.tasks.removeAt(taskIndex);
+      _updateProject(roles: updatedRoles);
       _refreshRoleStatus(roleIndex);
     });
 
@@ -306,29 +344,42 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final text = chatController.text.trim();
     if (text.isEmpty) return;
 
+    final updatedMessages = [...chatMessages];
+    updatedMessages.add(
+      ChatMessageModel(
+        id: DateTime.now().millisecondsSinceEpoch,
+        sender: '나',
+        time: _fakeNowText(),
+        message: text,
+        roleTag: null,
+        isAi: false,
+        isFile: false,
+        isRead: true,
+      ),
+    );
+
+    final updatedNotifications = [...notifications];
+    updatedNotifications.insert(
+      0,
+      AppNotificationModel(
+        id: DateTime.now().millisecondsSinceEpoch + 1,
+        title: '새 채팅 알림',
+        body: '새로운 진행 상황 메시지가 추가되었어요.',
+        type: 'chat',
+        createdAt: DateTime.now(),
+        isRead: false,
+      ),
+    );
+
     setState(() {
-      chatMessages.add(
-        _ChatMessage(
-          sender: '나',
-          time: _fakeNowText(),
-          message: text,
-          roleTag: null,
-          isAi: false,
-          isFile: false,
-        ),
+      _updateProject(
+        chatMessages: updatedMessages,
+        notifications: updatedNotifications,
       );
-      notifications.insert(
-        0,
-        _AppNotification(
-          title: '새 채팅 알림',
-          body: '새로운 진행 상황 메시지가 추가되었어요.',
-          type: 'chat',
-          createdAt: DateTime.now(),
-        ),
-      );
-      unreadChatCount += 1;
       chatController.clear();
     });
+
+    _scrollChatToBottom();
   }
 
   String _fakeNowText() {
@@ -340,27 +391,51 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   void _addAttachmentMessage(String message) {
+    final updatedMessages = [...chatMessages];
+    updatedMessages.add(
+      ChatMessageModel(
+        id: DateTime.now().millisecondsSinceEpoch,
+        sender: '나',
+        time: _fakeNowText(),
+        message: message,
+        roleTag: null,
+        isAi: false,
+        isFile: true,
+        isRead: true,
+      ),
+    );
+
+    final updatedNotifications = [...notifications];
+    updatedNotifications.insert(
+      0,
+      AppNotificationModel(
+        id: DateTime.now().millisecondsSinceEpoch + 1,
+        title: '새 채팅 알림',
+        body: '새로운 파일이 공유되었어요.',
+        type: 'chat',
+        createdAt: DateTime.now(),
+        isRead: false,
+      ),
+    );
+
     setState(() {
-      chatMessages.add(
-        _ChatMessage(
-          sender: '나',
-          time: _fakeNowText(),
-          message: message,
-          roleTag: null,
-          isAi: false,
-          isFile: true,
-        ),
+      _updateProject(
+        chatMessages: updatedMessages,
+        notifications: updatedNotifications,
       );
-      notifications.insert(
-        0,
-        _AppNotification(
-          title: '새 채팅 알림',
-          body: '새로운 파일이 공유되었어요.',
-          type: 'chat',
-          createdAt: DateTime.now(),
-        ),
+    });
+
+    _scrollChatToBottom();
+  }
+
+  void _scrollChatToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!chatScrollController.hasClients) return;
+      chatScrollController.animateTo(
+        chatScrollController.position.maxScrollExtent + 120,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
       );
-      unreadChatCount += 1;
     });
   }
 
@@ -481,10 +556,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           final studentId = studentIdController.text.trim();
                           if (name.isEmpty || studentId.isEmpty) return;
 
+                          final updatedMembers = [...members];
+                          updatedMembers.add(
+                            MemberModel(
+                              id: DateTime.now().millisecondsSinceEpoch,
+                              name: name,
+                              studentId: studentId,
+                            ),
+                          );
+
                           setState(() {
-                            members.add(
-                              _MemberItem(name: name, studentId: studentId),
-                            );
+                            _updateProject(members: updatedMembers);
                           });
                           Navigator.pop(context);
                         },
@@ -510,6 +592,115 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> showEditMemberSheet(MemberModel member, int index) async {
+    final nameController = TextEditingController(text: member.name);
+    final studentIdController = TextEditingController(text: member.studentId);
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _SheetHandle(),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        '팀원 수정',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: kText,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _DialogField(
+                  controller: nameController,
+                  label: '이름',
+                  hintText: '팀원 이름을 입력하세요',
+                ),
+                const SizedBox(height: 14),
+                _DialogField(
+                  controller: studentIdController,
+                  label: '학번',
+                  hintText: '학번을 입력하세요',
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('취소'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final updatedMembers = [...members];
+                          updatedMembers[index] = member.copyWith(
+                            name: nameController.text.trim(),
+                            studentId: studentIdController.text.trim(),
+                          );
+
+                          setState(() {
+                            _updateProject(members: updatedMembers);
+                          });
+
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kWine,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('저장'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void deleteMember(int index) {
+    final updatedMembers = [...members];
+    final removed = updatedMembers.removeAt(index);
+
+    setState(() {
+      _updateProject(members: updatedMembers);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${removed.name} 팀원을 삭제했어요.')),
     );
   }
 
@@ -629,20 +820,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(52),
-                              side: const BorderSide(color: Color(0xFFE4D9D4)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Text(
-                              '취소',
-                              style: TextStyle(
-                                color: kSub,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                            child: const Text('취소'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -652,31 +830,27 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                               final title = titleController.text.trim();
                               if (title.isEmpty) return;
 
+                              final updatedSchedules = [...schedules];
+                              updatedSchedules.add(
+                                ScheduleModel(
+                                  id: DateTime.now().millisecondsSinceEpoch,
+                                  title: title,
+                                  date: selectedDate,
+                                  startTime: startTime,
+                                  endTime: endTime,
+                                ),
+                              );
+
                               setState(() {
-                                schedules.add(
-                                  _ScheduleItem(
-                                    title: title,
-                                    date: selectedDate,
-                                    startTime: startTime,
-                                    endTime: endTime,
-                                  ),
-                                );
+                                _updateProject(schedules: updatedSchedules);
                               });
                               Navigator.pop(context);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: kWine,
                               foregroundColor: Colors.white,
-                              elevation: 0,
-                              minimumSize: const Size.fromHeight(52),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
                             ),
-                            child: const Text(
-                              '추가',
-                              style: TextStyle(fontWeight: FontWeight.w800),
-                            ),
+                            child: const Text('추가'),
                           ),
                         ),
                       ],
@@ -691,13 +865,182 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     );
   }
 
+  Future<void> showEditScheduleSheet(ScheduleModel schedule, int index) async {
+    final titleController = TextEditingController(text: schedule.title);
+    DateTime selectedDate = schedule.date;
+    TimeOfDay startTime = schedule.startTime;
+    TimeOfDay endTime = schedule.endTime;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setInnerState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const _SheetHandle(),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            '일정 수정',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: kText,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _DialogField(
+                      controller: titleController,
+                      label: '제목',
+                      hintText: '예: 중간 점검 회의',
+                    ),
+                    const SizedBox(height: 14),
+                    _DateSelectField(
+                      label: '날짜',
+                      text: formatDate(selectedDate),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2024),
+                          lastDate: DateTime(2035),
+                        );
+                        if (picked != null) {
+                          setInnerState(() {
+                            selectedDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _TimeSelectField(
+                            label: '시작 시간',
+                            text: formatTimeOfDay(startTime),
+                            onTap: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: startTime,
+                              );
+                              if (picked != null) {
+                                setInnerState(() {
+                                  startTime = picked;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _TimeSelectField(
+                            label: '종료 시간',
+                            text: formatTimeOfDay(endTime),
+                            onTap: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: endTime,
+                              );
+                              if (picked != null) {
+                                setInnerState(() {
+                                  endTime = picked;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('취소'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final updatedSchedules = [...schedules];
+                              updatedSchedules[index] = schedule.copyWith(
+                                title: titleController.text.trim(),
+                                date: selectedDate,
+                                startTime: startTime,
+                                endTime: endTime,
+                              );
+
+                              setState(() {
+                                _updateProject(schedules: updatedSchedules);
+                              });
+
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kWine,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('저장'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void deleteSchedule(int index) {
+    final updatedSchedules = [...schedules];
+    final removed = updatedSchedules.removeAt(index);
+
+    setState(() {
+      _updateProject(schedules: updatedSchedules);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${removed.title} 일정을 삭제했어요.')),
+    );
+  }
+
   Future<void> showAddTaskDialog(int roleIndex) async {
     final titleController = TextEditingController();
     DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.25),
+      barrierColor: Colors.black.withOpacity(0.25),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setInnerState) {
@@ -754,20 +1097,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(52),
-                              side: const BorderSide(color: Color(0xFFE4D9D4)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Text(
-                              '취소',
-                              style: TextStyle(
-                                color: kSub,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                            child: const Text('취소'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -777,16 +1107,25 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                               final title = titleController.text.trim();
                               if (title.isEmpty) return;
 
+                              final role = roles[roleIndex];
+                              final updatedTasks = [...role.tasks];
+                              updatedTasks.add(
+                                TaskModel(
+                                  id: DateTime.now().millisecondsSinceEpoch,
+                                  title: title,
+                                  priority: '보통',
+                                  dueDate: selectedDate,
+                                  done: false,
+                                  source: '수동',
+                                ),
+                              );
+
+                              final updatedRoles = [...roles];
+                              updatedRoles[roleIndex] =
+                                  role.copyWith(tasks: updatedTasks);
+
                               setState(() {
-                                roles[roleIndex].tasks.add(
-                                      _TaskItem(
-                                        title: title,
-                                        priority: '보통',
-                                        dueDate: selectedDate,
-                                        done: false,
-                                        source: '수동',
-                                      ),
-                                    );
+                                _updateProject(roles: updatedRoles);
                                 _refreshRoleStatus(roleIndex);
                               });
 
@@ -795,16 +1134,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: kWine,
                               foregroundColor: Colors.white,
-                              elevation: 0,
-                              minimumSize: const Size.fromHeight(52),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
                             ),
-                            child: const Text(
-                              '추가',
-                              style: TextStyle(fontWeight: FontWeight.w800),
-                            ),
+                            child: const Text('추가'),
                           ),
                         ),
                       ],
@@ -824,7 +1155,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.25),
+      barrierColor: Colors.black.withOpacity(0.25),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setInnerState) {
@@ -887,29 +1218,24 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(52),
-                              side: const BorderSide(color: Color(0xFFE4D9D4)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Text(
-                              '취소',
-                              style: TextStyle(
-                                color: kSub,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                            child: const Text('취소'),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
+                              final role = roles[roleIndex];
+                              final updatedTasks = [...role.tasks];
+                              updatedTasks[taskIndex] = updatedTasks[taskIndex]
+                                  .copyWith(dueDate: selectedDate);
+
+                              final updatedRoles = [...roles];
+                              updatedRoles[roleIndex] =
+                                  role.copyWith(tasks: updatedTasks);
+
                               setState(() {
-                                roles[roleIndex].tasks[taskIndex].dueDate =
-                                    selectedDate;
+                                _updateProject(roles: updatedRoles);
                                 _refreshRoleStatus(roleIndex);
                               });
                               Navigator.pop(context);
@@ -917,16 +1243,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: kWine,
                               foregroundColor: Colors.white,
-                              elevation: 0,
-                              minimumSize: const Size.fromHeight(52),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
                             ),
-                            child: const Text(
-                              '저장',
-                              style: TextStyle(fontWeight: FontWeight.w800),
-                            ),
+                            child: const Text('저장'),
                           ),
                         ),
                       ],
@@ -945,32 +1263,38 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final role = roles[roleIndex];
     final generated = _aiRecommendedTasks(role.title);
 
+    final updatedRoles = [...roles];
+    updatedRoles[roleIndex] = role.copyWith(tasks: generated);
+
     setState(() {
-      role.tasks = generated;
+      _updateProject(roles: updatedRoles);
       _refreshRoleStatus(roleIndex);
     });
   }
 
-  List<_TaskItem> _aiRecommendedTasks(String roleTitle) {
+  List<TaskModel> _aiRecommendedTasks(String roleTitle) {
     final now = DateTime.now();
 
     if (roleTitle.contains('자료')) {
       return [
-        _TaskItem(
+        TaskModel(
+          id: now.millisecondsSinceEpoch + 1,
           title: '참고자료 찾기',
           priority: '높음',
           dueDate: now.add(const Duration(days: 1)),
           done: false,
           source: 'AI',
         ),
-        _TaskItem(
+        TaskModel(
+          id: now.millisecondsSinceEpoch + 2,
           title: '논문 요약',
           priority: '보통',
           dueDate: now.add(const Duration(days: 2)),
           done: false,
           source: 'AI',
         ),
-        _TaskItem(
+        TaskModel(
+          id: now.millisecondsSinceEpoch + 3,
           title: '출처 정리',
           priority: '보통',
           dueDate: now.add(const Duration(days: 3)),
@@ -982,21 +1306,24 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     if (roleTitle.contains('발표 자료')) {
       return [
-        _TaskItem(
+        TaskModel(
+          id: now.millisecondsSinceEpoch + 4,
           title: '슬라이드 초안 작성',
           priority: '높음',
           dueDate: now.add(const Duration(days: 1)),
           done: false,
           source: 'AI',
         ),
-        _TaskItem(
+        TaskModel(
+          id: now.millisecondsSinceEpoch + 5,
           title: '디자인 정리',
           priority: '높음',
           dueDate: now.add(const Duration(days: 2)),
           done: false,
           source: 'AI',
         ),
-        _TaskItem(
+        TaskModel(
+          id: now.millisecondsSinceEpoch + 6,
           title: '최종 수정 반영',
           priority: '보통',
           dueDate: now.add(const Duration(days: 3)),
@@ -1008,21 +1335,24 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     if (roleTitle.contains('발표')) {
       return [
-        _TaskItem(
+        TaskModel(
+          id: now.millisecondsSinceEpoch + 7,
           title: '발표 대본 준비',
           priority: '높음',
           dueDate: now.add(const Duration(days: 1)),
           done: false,
           source: 'AI',
         ),
-        _TaskItem(
+        TaskModel(
+          id: now.millisecondsSinceEpoch + 8,
           title: '1차 리허설',
           priority: '높음',
           dueDate: now.add(const Duration(days: 2)),
           done: false,
           source: 'AI',
         ),
-        _TaskItem(
+        TaskModel(
+          id: now.millisecondsSinceEpoch + 9,
           title: '예상 질문 정리',
           priority: '보통',
           dueDate: now.add(const Duration(days: 3)),
@@ -1033,14 +1363,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     }
 
     return [
-      _TaskItem(
+      TaskModel(
+        id: now.millisecondsSinceEpoch + 10,
         title: '$roleTitle 관련 초안 작성',
         priority: '보통',
         dueDate: now.add(const Duration(days: 1)),
         done: false,
         source: 'AI',
       ),
-      _TaskItem(
+      TaskModel(
+        id: now.millisecondsSinceEpoch + 11,
         title: '$roleTitle 관련 검토',
         priority: '보통',
         dueDate: now.add(const Duration(days: 2)),
@@ -1286,6 +1618,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   void showNotificationSheet() {
+    setState(() {
+      _markAllNotificationsAsRead();
+    });
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1341,8 +1677,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           return Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8F3F0),
+                              color: item.isRead
+                                  ? const Color(0xFFF8F3F0)
+                                  : const Color(0xFFFFF3EE),
                               borderRadius: BorderRadius.circular(18),
+                              border: item.isRead
+                                  ? null
+                                  : Border.all(color: const Color(0xFFFFD6C7)),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1522,92 +1863,114 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   Widget buildTabContent() {
     switch (selectedTabIndex) {
       case 0:
-        return _OverviewTab(
-          members: members,
-          schedules: schedules,
-          summaryStatus: summaryStatus,
-          urgentTaskCount: urgentTaskCount,
-          overdueTaskCount: overdueTaskCount,
-          onAddMember: showAddMemberSheet,
-          onAddSchedule: showAddScheduleSheet,
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+          child: _OverviewTab(
+            members: members,
+            schedules: schedules,
+            summaryStatus: summaryStatus,
+            urgentTaskCount: urgentTaskCount,
+            overdueTaskCount: overdueTaskCount,
+            onAddMember: showAddMemberSheet,
+            onAddSchedule: showAddScheduleSheet,
+            onEditMember: showEditMemberSheet,
+            onDeleteMember: deleteMember,
+            onEditSchedule: showEditScheduleSheet,
+            onDeleteSchedule: deleteSchedule,
+          ),
         );
       case 1:
-        return _RolesTab(
-          roles: roles,
-          expandedRoleIndex: expandedRoleIndex,
-          onRoleTap: (index) {
-            setState(() {
-              expandedRoleIndex = expandedRoleIndex == index ? null : index;
-            });
-          },
-          onTaskToggle: toggleTask,
-          onAddTask: showAddTaskDialog,
-          onEditDeadline: showEditTaskDeadlineDialog,
-          onAutoGenerate: autoGenerateTasks,
-          onDeleteTask: deleteTask,
-          statusColor: statusColor,
-          completedTaskCount: completedTaskCount,
-          totalTaskCount: totalTaskCount,
-          isDueTomorrow: isDueTomorrow,
-          isOverdue: isOverdue,
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+          child: _RolesTab(
+            roles: roles,
+            expandedRoleIndex: expandedRoleIndex,
+            onRoleTap: (index) {
+              setState(() {
+                expandedRoleIndex = expandedRoleIndex == index ? null : index;
+              });
+            },
+            onTaskToggle: toggleTask,
+            onAddTask: showAddTaskDialog,
+            onEditDeadline: showEditTaskDeadlineDialog,
+            onAutoGenerate: autoGenerateTasks,
+            onDeleteTask: deleteTask,
+            statusColor: statusColor,
+            completedTaskCount: completedTaskCount,
+            totalTaskCount: totalTaskCount,
+            isDueTomorrow: isDueTomorrow,
+            isOverdue: isOverdue,
+          ),
         );
       case 2:
-        return _ChatTab(
-          messages: chatMessages,
-          controller: chatController,
-          onAttachTap: showAttachmentOptions,
-          onSendTap: sendChatMessage,
-          onFileOnlyTap: showFileOnlySheet,
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 12),
+          child: _ChatTab(
+            messages: chatMessages,
+            controller: chatController,
+            focusNode: chatFocusNode,
+            scrollController: chatScrollController,
+            onAttachTap: showAttachmentOptions,
+            onSendTap: sendChatMessage,
+            onFileOnlyTap: showFileOnlySheet,
+          ),
         );
       case 3:
-        return _StatusTab(
-          roles: roles,
-          summaryStatus: summaryStatus,
-          urgentTaskCount: urgentTaskCount,
-          overdueTaskCount: overdueTaskCount,
-          statusColor: statusColor,
-          completedTaskCount: completedTaskCount,
-          totalTaskCount: totalTaskCount,
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+          child: _StatusTab(
+            roles: roles,
+            summaryStatus: summaryStatus,
+            urgentTaskCount: urgentTaskCount,
+            overdueTaskCount: overdueTaskCount,
+            statusColor: statusColor,
+            completedTaskCount: completedTaskCount,
+            totalTaskCount: totalTaskCount,
+          ),
         );
       default:
         return const SizedBox.shrink();
     }
   }
 
+  void _dismissKeyboard() {
+    FocusScope.of(context).unfocus();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kCream,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _HeaderSection(
-              projectTitle: projectTitle,
-              summaryStatus: summaryStatus,
-              onBack: () => Navigator.pop(context),
-              onBellTap: showNotificationSheet,
-              statusColor: statusColor(summaryStatus),
-              onStatusTap: showUrgentTasksSheet,
-            ),
-            _TopTabBar(
-              selectedIndex: selectedTabIndex,
-              unreadChatCount: unreadChatCount,
-              onChanged: (index) {
-                setState(() {
-                  selectedTabIndex = index;
-                  if (index == 2) {
-                    unreadChatCount = 0;
-                  }
-                });
-              },
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
-                child: buildTabContent(),
+    return GestureDetector(
+      onTap: _dismissKeyboard,
+      child: Scaffold(
+        backgroundColor: kCream,
+        resizeToAvoidBottomInset: true,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _HeaderSection(
+                projectTitle: project.projectTitle,
+                summaryStatus: summaryStatus,
+                onBack: () => Navigator.pop(context),
+                onBellTap: showNotificationSheet,
+                statusColor: statusColor(summaryStatus),
+                onStatusTap: showUrgentTasksSheet,
+                unreadNotificationCount: unreadNotificationCount,
               ),
-            ),
-          ],
+              _TopTabBar(
+                selectedIndex: selectedTabIndex,
+                unreadChatCount: unreadChatCount,
+                onChanged: (index) {
+                  setState(() {
+                    selectedTabIndex = index;
+                    if (index == 2) {
+                      _markAllChatAsRead();
+                    }
+                  });
+                },
+              ),
+              Expanded(child: buildTabContent()),
+            ],
+          ),
         ),
       ),
     );
@@ -1621,6 +1984,7 @@ class _HeaderSection extends StatelessWidget {
   final VoidCallback onBellTap;
   final VoidCallback onStatusTap;
   final Color statusColor;
+  final int unreadNotificationCount;
 
   const _HeaderSection({
     required this.projectTitle,
@@ -1629,6 +1993,7 @@ class _HeaderSection extends StatelessWidget {
     required this.onBellTap,
     required this.onStatusTap,
     required this.statusColor,
+    required this.unreadNotificationCount,
   });
 
   @override
@@ -1667,14 +2032,50 @@ class _HeaderSection extends StatelessWidget {
               InkWell(
                 onTap: onBellTap,
                 borderRadius: BorderRadius.circular(20),
-                child: Container(
+                child: SizedBox(
                   width: 40,
                   height: 40,
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.notifications_none_rounded,
-                    color: Colors.white,
-                    size: 24,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Center(
+                        child: Icon(
+                          Icons.notifications_none_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      if (unreadNotificationCount > 0)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 1),
+                            constraints: const BoxConstraints(
+                                minWidth: 16, minHeight: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: _ProjectDetailScreenState.kWine,
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Text(
+                              unreadNotificationCount > 9
+                                  ? '9+'
+                                  : '$unreadNotificationCount',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -1773,13 +2174,9 @@ class _TopTabBar extends StatelessWidget {
                           top: -8,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 1,
-                            ),
+                                horizontal: 4, vertical: 1),
                             constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
+                                minWidth: 16, minHeight: 16),
                             decoration: BoxDecoration(
                               color: Colors.red,
                               borderRadius: BorderRadius.circular(999),
@@ -1819,13 +2216,17 @@ class _TopTabBar extends StatelessWidget {
 }
 
 class _OverviewTab extends StatelessWidget {
-  final List<_MemberItem> members;
-  final List<_ScheduleItem> schedules;
+  final List<MemberModel> members;
+  final List<ScheduleModel> schedules;
   final String summaryStatus;
   final int urgentTaskCount;
   final int overdueTaskCount;
   final VoidCallback onAddMember;
   final VoidCallback onAddSchedule;
+  final void Function(MemberModel member, int index) onEditMember;
+  final void Function(int index) onDeleteMember;
+  final void Function(ScheduleModel schedule, int index) onEditSchedule;
+  final void Function(int index) onDeleteSchedule;
 
   const _OverviewTab({
     required this.members,
@@ -1835,6 +2236,10 @@ class _OverviewTab extends StatelessWidget {
     required this.overdueTaskCount,
     required this.onAddMember,
     required this.onAddSchedule,
+    required this.onEditMember,
+    required this.onDeleteMember,
+    required this.onEditSchedule,
+    required this.onDeleteSchedule,
   });
 
   @override
@@ -1853,16 +2258,44 @@ class _OverviewTab extends StatelessWidget {
           buttonText: '+ 추가',
           onButtonTap: onAddMember,
           child: Column(
-            children: members.map((member) {
+            children: List.generate(members.length, (index) {
+              final member = members[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _SimpleListTile(
-                  title: member.name,
-                  subtitle: member.studentId,
-                  leadingText: member.name.characters.first,
+                child: Slidable(
+                  key: ValueKey('member_${member.id}'),
+                  endActionPane: ActionPane(
+                    motion: const ScrollMotion(),
+                    extentRatio: 0.42,
+                    children: [
+                      SlidableAction(
+                        onPressed: (_) => onEditMember(member, index),
+                        backgroundColor: const Color(0xFFB65AE1),
+                        foregroundColor: Colors.white,
+                        icon: Icons.edit_rounded,
+                        label: '수정',
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      SlidableAction(
+                        onPressed: (_) => onDeleteMember(index),
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        icon: Icons.delete_rounded,
+                        label: '삭제',
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ],
+                  ),
+                  child: _SimpleListTile(
+                    title: member.name,
+                    subtitle: member.studentId,
+                    leadingText: member.name.isNotEmpty
+                        ? member.name.characters.first
+                        : '?',
+                  ),
                 ),
               );
-            }).toList(),
+            }),
           ),
         ),
         const SizedBox(height: 16),
@@ -1872,16 +2305,42 @@ class _OverviewTab extends StatelessWidget {
           buttonText: '+ 추가',
           onButtonTap: onAddSchedule,
           child: Column(
-            children: schedules.map((schedule) {
+            children: List.generate(schedules.length, (index) {
+              final schedule = schedules[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _SimpleListTile(
-                  title: schedule.title,
-                  subtitle:
-                      '${formatDate(schedule.date)} · ${formatTimeOfDay(schedule.startTime)} - ${formatTimeOfDay(schedule.endTime)}',
+                child: Slidable(
+                  key: ValueKey('schedule_${schedule.id}'),
+                  endActionPane: ActionPane(
+                    motion: const ScrollMotion(),
+                    extentRatio: 0.42,
+                    children: [
+                      SlidableAction(
+                        onPressed: (_) => onEditSchedule(schedule, index),
+                        backgroundColor: const Color(0xFFB65AE1),
+                        foregroundColor: Colors.white,
+                        icon: Icons.edit_rounded,
+                        label: '수정',
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      SlidableAction(
+                        onPressed: (_) => onDeleteSchedule(index),
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        icon: Icons.delete_rounded,
+                        label: '삭제',
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ],
+                  ),
+                  child: _SimpleListTile(
+                    title: schedule.title,
+                    subtitle:
+                        '${formatDate(schedule.date)} · ${formatTimeOfDay(schedule.startTime)} - ${formatTimeOfDay(schedule.endTime)}',
+                  ),
                 ),
               );
-            }).toList(),
+            }),
           ),
         ),
       ],
@@ -1890,7 +2349,7 @@ class _OverviewTab extends StatelessWidget {
 }
 
 class _RolesTab extends StatelessWidget {
-  final List<_RoleItem> roles;
+  final List<RoleModel> roles;
   final int? expandedRoleIndex;
   final void Function(int) onRoleTap;
   final void Function(int, int) onTaskToggle;
@@ -1899,10 +2358,10 @@ class _RolesTab extends StatelessWidget {
   final void Function(int) onAutoGenerate;
   final void Function(int, int) onDeleteTask;
   final Color Function(String) statusColor;
-  final int Function(_RoleItem) completedTaskCount;
-  final int Function(_RoleItem) totalTaskCount;
-  final bool Function(_TaskItem) isDueTomorrow;
-  final bool Function(_TaskItem) isOverdue;
+  final int Function(RoleModel) completedTaskCount;
+  final int Function(RoleModel) totalTaskCount;
+  final bool Function(TaskModel) isDueTomorrow;
+  final bool Function(TaskModel) isOverdue;
 
   const _RolesTab({
     required this.roles,
@@ -2008,9 +2467,7 @@ class _RolesTab extends StatelessWidget {
                           alignment: Alignment.centerLeft,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
+                                horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF8F3F0),
                               borderRadius: BorderRadius.circular(14),
@@ -2030,9 +2487,7 @@ class _RolesTab extends StatelessWidget {
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
+                                  horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF7F1EE),
                                 borderRadius: BorderRadius.circular(14),
@@ -2049,9 +2504,7 @@ class _RolesTab extends StatelessWidget {
                             const SizedBox(width: 10),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
+                                  horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 color: expanded
                                     ? _ProjectDetailScreenState.kWine
@@ -2078,10 +2531,9 @@ class _RolesTab extends StatelessWidget {
                   if (expanded) ...[
                     const SizedBox(height: 16),
                     Container(
-                      width: double.infinity,
-                      height: 1,
-                      color: const Color(0xFFF0E8E4),
-                    ),
+                        width: double.infinity,
+                        height: 1,
+                        color: const Color(0xFFF0E8E4)),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -2105,9 +2557,7 @@ class _RolesTab extends StatelessWidget {
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size(0, 40),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
+                                horizontal: 14, vertical: 10),
                             side: const BorderSide(color: Color(0xFFE4D9D4)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -2129,9 +2579,7 @@ class _RolesTab extends StatelessWidget {
                             elevation: 0,
                             minimumSize: const Size(0, 40),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
+                                horizontal: 14, vertical: 10),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
@@ -2167,8 +2615,7 @@ class _RolesTab extends StatelessWidget {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: Dismissible(
-                            key: ValueKey(
-                                '${role.title}_${task.title}_$taskIndex'),
+                            key: ValueKey('${role.id}_${task.id}_$taskIndex'),
                             direction: DismissDirection.endToStart,
                             background: Container(
                               alignment: Alignment.centerRight,
@@ -2178,10 +2625,8 @@ class _RolesTab extends StatelessWidget {
                                 color: Colors.red,
                                 borderRadius: BorderRadius.circular(18),
                               ),
-                              child: const Icon(
-                                Icons.delete_rounded,
-                                color: Colors.white,
-                              ),
+                              child: const Icon(Icons.delete_rounded,
+                                  color: Colors.white),
                             ),
                             confirmDismiss: (_) async {
                               return await showDialog<bool>(
@@ -2231,8 +2676,10 @@ class _RolesTab extends StatelessWidget {
 }
 
 class _ChatTab extends StatelessWidget {
-  final List<_ChatMessage> messages;
+  final List<ChatMessageModel> messages;
   final TextEditingController controller;
+  final FocusNode focusNode;
+  final ScrollController scrollController;
   final VoidCallback onAttachTap;
   final VoidCallback onSendTap;
   final VoidCallback onFileOnlyTap;
@@ -2240,6 +2687,8 @@ class _ChatTab extends StatelessWidget {
   const _ChatTab({
     required this.messages,
     required this.controller,
+    required this.focusNode,
+    required this.scrollController,
     required this.onAttachTap,
     required this.onSendTap,
     required this.onFileOnlyTap,
@@ -2247,121 +2696,162 @@ class _ChatTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                '진행상황 공유',
-                style: TextStyle(
-                  color: _ProjectDetailScreenState.kText,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            InkWell(
-              onTap: onFileOnlyTap,
-              borderRadius: BorderRadius.circular(18),
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3ECE8),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.folder_open_rounded,
-                  color: _ProjectDetailScreenState.kWine,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          '작업 내용과 파일을 공유하세요',
-          style: TextStyle(
-            color: _ProjectDetailScreenState.kSub,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _ProjectDetailScreenState.kCard,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              ...messages.map((message) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _ChatBubble(message: message),
-                );
-              }),
-              const SizedBox(height: 6),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8F3F0),
-                  borderRadius: BorderRadius.circular(18),
+              const Expanded(
+                child: Text(
+                  '진행상황 공유',
+                  style: TextStyle(
+                    color: _ProjectDetailScreenState.kText,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: onAttachTap,
-                      icon: const Icon(
-                        Icons.add_circle_outline,
-                        color: _ProjectDetailScreenState.kSub,
-                      ),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: controller,
-                        decoration: const InputDecoration(
-                          hintText: '진행 상황을 공유하세요...',
-                          hintStyle: TextStyle(
-                            color: _ProjectDetailScreenState.kSub,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: onSendTap,
-                      icon: const Icon(
-                        Icons.send_rounded,
-                        color: _ProjectDetailScreenState.kWine,
-                      ),
-                    ),
-                  ],
+              ),
+              InkWell(
+                onTap: onFileOnlyTap,
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3ECE8),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.folder_open_rounded,
+                    color: _ProjectDetailScreenState.kWine,
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 6),
+          const Text(
+            '작업 내용과 파일을 공유하세요',
+            style: TextStyle(
+              color: _ProjectDetailScreenState.kSub,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: _ProjectDetailScreenState.kCard,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: NotificationListener<ScrollUpdateNotification>(
+                      onNotification: (_) {
+                        FocusScope.of(context).unfocus();
+                        return false;
+                      },
+                      child: ListView.builder(
+                        controller: scrollController,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          final message = messages[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _ChatBubble(message: message),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      12,
+                      10,
+                      12,
+                      bottomInset > 0 ? 10 : 12,
+                    ),
+                    decoration: const BoxDecoration(
+                      border: Border(top: BorderSide(color: Color(0xFFF0E8E4))),
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F3F0),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              onPressed: onAttachTap,
+                              icon: const Icon(
+                                Icons.add_circle_outline,
+                                color: _ProjectDetailScreenState.kSub,
+                              ),
+                            ),
+                            Expanded(
+                              child: TextField(
+                                controller: controller,
+                                focusNode: focusNode,
+                                minLines: 1,
+                                maxLines: 4,
+                                textInputAction: TextInputAction.newline,
+                                decoration: const InputDecoration(
+                                  hintText: '진행 상황을 공유하세요...',
+                                  hintStyle: TextStyle(
+                                    color: _ProjectDetailScreenState.kSub,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  border: InputBorder.none,
+                                ),
+                                onTapOutside: (_) =>
+                                    FocusScope.of(context).unfocus(),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: onSendTap,
+                              icon: const Icon(
+                                Icons.send_rounded,
+                                color: _ProjectDetailScreenState.kWine,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _StatusTab extends StatelessWidget {
-  final List<_RoleItem> roles;
+  final List<RoleModel> roles;
   final String summaryStatus;
   final int urgentTaskCount;
   final int overdueTaskCount;
   final Color Function(String) statusColor;
-  final int Function(_RoleItem) completedTaskCount;
-  final int Function(_RoleItem) totalTaskCount;
+  final int Function(RoleModel) completedTaskCount;
+  final int Function(RoleModel) totalTaskCount;
 
   const _StatusTab({
     required this.roles,
@@ -2719,7 +3209,7 @@ class _SimpleListTile extends StatelessWidget {
 }
 
 class _TaskTile extends StatelessWidget {
-  final _TaskItem task;
+  final TaskModel task;
   final VoidCallback onTap;
   final VoidCallback onEditDeadline;
   final bool isDueTomorrow;
@@ -2883,7 +3373,7 @@ class _TaskTile extends StatelessWidget {
 }
 
 class _ChatBubble extends StatelessWidget {
-  final _ChatMessage message;
+  final ChatMessageModel message;
 
   const _ChatBubble({
     required this.message,
@@ -2902,19 +3392,37 @@ class _ChatBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: isAi ? const Color(0xFFF9F1FF) : const Color(0xFFF8F3F0),
             borderRadius: BorderRadius.circular(18),
+            border: !message.isRead && message.sender != '나'
+                ? Border.all(color: const Color(0xFFD7B7F5))
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                message.sender,
-                style: TextStyle(
-                  color: isAi
-                      ? const Color(0xFF7B3CB0)
-                      : _ProjectDetailScreenState.kText,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
+              Row(
+                children: [
+                  Text(
+                    message.sender,
+                    style: TextStyle(
+                      color: isAi
+                          ? const Color(0xFF7B3CB0)
+                          : _ProjectDetailScreenState.kText,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (!message.isRead && message.sender != '나') ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ],
               ),
               if (message.roleTag != null) ...[
                 const SizedBox(height: 6),
@@ -3273,78 +3781,6 @@ class _SheetHandle extends StatelessWidget {
   }
 }
 
-class _MemberItem {
-  final String name;
-  final String studentId;
-
-  _MemberItem({
-    required this.name,
-    required this.studentId,
-  });
-}
-
-class _ScheduleItem {
-  final String title;
-  final DateTime date;
-  final TimeOfDay startTime;
-  final TimeOfDay endTime;
-
-  _ScheduleItem({
-    required this.title,
-    required this.date,
-    required this.startTime,
-    required this.endTime,
-  });
-}
-
-class _RoleItem {
-  String title;
-  String assignee;
-  String status;
-  List<_TaskItem> tasks;
-
-  _RoleItem({
-    required this.title,
-    required this.assignee,
-    required this.status,
-    required this.tasks,
-  });
-}
-
-class _TaskItem {
-  String title;
-  String priority;
-  DateTime dueDate;
-  bool done;
-  String source;
-
-  _TaskItem({
-    required this.title,
-    required this.priority,
-    required this.dueDate,
-    required this.done,
-    required this.source,
-  });
-}
-
-class _ChatMessage {
-  final String sender;
-  final String time;
-  final String message;
-  final String? roleTag;
-  final bool isAi;
-  final bool isFile;
-
-  _ChatMessage({
-    required this.sender,
-    required this.time,
-    required this.message,
-    this.roleTag,
-    required this.isAi,
-    required this.isFile,
-  });
-}
-
 class _UrgentTaskView {
   final String title;
   final String assignee;
@@ -3358,19 +3794,5 @@ class _UrgentTaskView {
     required this.priority,
     required this.dueDate,
     required this.isOverdue,
-  });
-}
-
-class _AppNotification {
-  final String title;
-  final String body;
-  final String type;
-  final DateTime createdAt;
-
-  _AppNotification({
-    required this.title,
-    required this.body,
-    required this.type,
-    required this.createdAt,
   });
 }
