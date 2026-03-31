@@ -12,7 +12,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   static const Color primaryColor = Color(0xFFA31621);
@@ -24,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    usernameController.dispose();
+    emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }
@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          "username": usernameController.text.trim(),
+          "username": emailController.text.trim(),
           "password": passwordController.text.trim(),
         }),
       );
@@ -57,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
             builder: (_) => HomeScreen(
               userName: data['display_name'] ??
                   data['username'] ??
-                  usernameController.text.trim(),
+                  emailController.text.trim(),
               token: data['access_token'],
             ),
           ),
@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                '이름',
+                                '이메일',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -189,9 +189,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 8),
                               TextField(
-                                controller: usernameController,
+                                controller: emailController,
+                                keyboardType: TextInputType.emailAddress,
                                 decoration: InputDecoration(
-                                  hintText: '이름을 입력하세요',
+                                  hintText: '이메일을 입력하세요',
                                   hintStyle: const TextStyle(
                                     color: Color(0xFFA58787),
                                     fontSize: 14,

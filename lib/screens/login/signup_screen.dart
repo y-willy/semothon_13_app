@@ -329,7 +329,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       final response = await http.post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode({
-        "username": nameController.text.trim(),
+        "username": emailController.text.trim(),
         "email": emailController.text.trim(),
         "password": passwordController.text.trim(),
         "display_name": nameController.text.trim(),
@@ -344,7 +344,7 @@ class _SignupScreenState extends State<SignupScreen> {
           final loginResponse = await http.post(
             Uri.parse('https://semothon13app-production.up.railway.app/auth/login'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({"email": emailController.text.trim(), "password": passwordController.text.trim()}),
+            body: jsonEncode({"username": emailController.text.trim(), "password": passwordController.text.trim()}),
           );
 
           if (loginResponse.statusCode == 200) {
