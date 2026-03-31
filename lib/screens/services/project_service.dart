@@ -172,16 +172,22 @@ class ProjectService {
     required String projectNumber,
     required int roleId,
     required int taskId,
-    required DateTime dueDate,
-    required bool done,
+    DateTime? dueDate,
+    bool? done,
   }) async {
+    final Map<String, dynamic> body = {};
+
+    if (dueDate != null) {
+      body['dueDate'] = dueDate.toIso8601String();
+    }
+    if (done != null) {
+      body['done'] = done;
+    }
+
     final response = await client.patch(
       Uri.parse('$baseUrl/projects/$projectNumber/roles/$roleId/tasks/$taskId'),
       headers: _headers,
-      body: jsonEncode({
-        'dueDate': dueDate.toIso8601String(),
-        'done': done,
-      }),
+      body: jsonEncode(body),
     );
 
     _throwIfFailed(response, '업무 수정 실패');
