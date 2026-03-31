@@ -824,7 +824,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 22),
 
-                    // ─── 회원가입 버튼 ───
+                    // ─── 회원가입 버튼
                     SizedBox(
                       width: double.infinity, height: 44,
                       child: ElevatedButton.icon(
