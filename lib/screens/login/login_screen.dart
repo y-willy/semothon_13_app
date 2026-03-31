@@ -58,6 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
               userName: data['display_name'] ??
                   data['username'] ??
                   usernameController.text.trim(),
+              token: data['access_token'],
             ),
           ),
         );
