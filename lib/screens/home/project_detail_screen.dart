@@ -88,7 +88,47 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   List<ChatMessageModel> get chatMessages => project.chatMessages;
   List<AppNotificationModel> get notifications => project.notifications;
 
+  int _maxBy<T>(List<T> items, int Function(T) pick) {
+    if (items.isEmpty) return 0;
+    return items.map(pick).reduce((a, b) => a > b ? a : b);
+  }
+
+  int _nextMemberId() => _maxBy(members, (item) => item.id) + 1;
+
+  int _nextScheduleId() => _maxBy(schedules, (item) => item.id) + 1;
+
+  int _nextTaskId() {
+    int maxId = 0;
+    for (final role in roles) {
+      for (final task in role.tasks) {
+        if (task.id > maxId) maxId = task.id;
+      }
+    }
+    return maxId + 1;
+  }
+
+  int _nextChatId() => _maxBy(chatMessages, (item) => item.id) + 1;
+
+  String _nowLabel() {
+    final now = TimeOfDay.now();
+    return formatTimeOfDay(now);
+  }
+
   Future<void> _loadProjectDetail({bool showLoading = true}) async {
+    // ✅ 1. mock 프로젝트면 API 호출 안함 (404 방지)
+    if (project.projectNumber == '12' ||
+        project.projectNumber == '13' ||
+        project.projectNumber == '7') {
+      if (!mounted) return;
+      setState(() {
+        project = widget.project;
+        _refreshAllRoleStatuses();
+        _errorText = null;
+        _isLoading = false;
+      });
+      return;
+    }
+
     if (showLoading) {
       setState(() {
         _isLoading = true;
@@ -97,8 +137,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     }
 
     try {
-      final fetched =
-          await widget.service.fetchProjectDetail(project.projectNumber);
+      final fetched = await widget.service.fetchProjectDetail(
+        project.projectNumber,
+      );
 
       if (!mounted) return;
       setState(() {
@@ -108,10 +149,15 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+
+      // ✅ 2. 실패해도 기존 UI 유지
       setState(() {
-        _errorText = e.toString();
+        project = widget.project;
+        _refreshAllRoleStatuses();
+        _errorText = null;
       });
-      _showErrorSnackBar('프로젝트 정보를 불러오지 못했어요.');
+
+      _showErrorSnackBar('서버 연결 실패 → 기존 데이터 표시');
     } finally {
       if (!mounted) return;
       if (showLoading) {
@@ -127,15 +173,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   void _showErrorSnackBar(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text)),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   void _showSuccessSnackBar(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text)),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   Color statusColor(String status) {
@@ -164,10 +206,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   bool isDueTomorrow(TaskModel task) {
     if (task.done) return false;
     final now = DateTime.now();
-    final tomorrow =
-        DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
-    final due =
-        DateTime(task.dueDate.year, task.dueDate.month, task.dueDate.day);
+    final tomorrow = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).add(const Duration(days: 1));
+    final due = DateTime(
+      task.dueDate.year,
+      task.dueDate.month,
+      task.dueDate.day,
+    );
     return due == tomorrow;
   }
 
@@ -175,8 +223,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     if (task.done) return false;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final due =
-        DateTime(task.dueDate.year, task.dueDate.month, task.dueDate.day);
+    final due = DateTime(
+      task.dueDate.year,
+      task.dueDate.month,
+      task.dueDate.day,
+    );
     return due.isBefore(today);
   }
 
@@ -322,6 +373,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     try {
       await widget.service.readAllChat(project.projectNumber);
       await _reloadProject();
+    } on UnsupportedError {
+      final updated = chatMessages.map((message) {
+        if (message.sender == '나' || message.isRead) return message;
+        return message.copyWith(isRead: true);
+      }).toList();
+
+      if (!mounted) return;
+      setState(() {
+        project = project.copyWith(chatMessages: updated);
+      });
     } catch (e) {
       _showErrorSnackBar('채팅 읽음 처리에 실패했어요.');
     }
@@ -331,6 +392,15 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     try {
       await widget.service.readAllNotifications(project.projectNumber);
       await _reloadProject();
+    } on UnsupportedError {
+      final updated = notifications
+          .map((item) => item.isRead ? item : item.copyWith(isRead: true))
+          .toList();
+
+      if (!mounted) return;
+      setState(() {
+        project = project.copyWith(notifications: updated);
+      });
     } catch (e) {
       _showErrorSnackBar('알림 읽음 처리에 실패했어요.');
     }
@@ -349,6 +419,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         done: !task.done,
       );
       await _reloadProject();
+    } on UnsupportedError {
+      final updatedRoles = [...roles];
+      final updatedTasks = [...role.tasks];
+      updatedTasks[taskIndex] = task.copyWith(done: !task.done);
+      updatedRoles[roleIndex] = role.copyWith(tasks: updatedTasks);
+
+      if (!mounted) return;
+      setState(() {
+        project = project.copyWith(roles: updatedRoles);
+        _refreshAllRoleStatuses();
+      });
     } catch (e) {
       _showErrorSnackBar('업무 상태 변경에 실패했어요.');
     }
@@ -365,6 +446,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         taskId: task.id,
       );
       await _reloadProject();
+      _showSuccessSnackBar('${task.title} 업무를 삭제했어요.');
+    } on UnsupportedError {
+      final updatedRoles = [...roles];
+      final updatedTasks = [...role.tasks]..removeAt(taskIndex);
+      updatedRoles[roleIndex] = role.copyWith(tasks: updatedTasks);
+
+      if (!mounted) return;
+      setState(() {
+        project = project.copyWith(roles: updatedRoles);
+        _refreshAllRoleStatuses();
+      });
       _showSuccessSnackBar('${task.title} 업무를 삭제했어요.');
     } catch (e) {
       _showErrorSnackBar('업무 삭제에 실패했어요.');
@@ -388,6 +480,27 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       chatController.clear();
       await _reloadProject();
       _scrollChatToBottom();
+    } on UnsupportedError {
+      final updated = [
+        ...chatMessages,
+        ChatMessageModel(
+          id: _nextChatId(),
+          sender: '나',
+          message: text,
+          time: _nowLabel(),
+          isMe: true,
+          isRead: true,
+          isAi: false,
+          isFile: false,
+        ),
+      ];
+
+      if (!mounted) return;
+      setState(() {
+        project = project.copyWith(chatMessages: updated);
+      });
+      chatController.clear();
+      _scrollChatToBottom();
     } catch (e) {
       _showErrorSnackBar('채팅 전송에 실패했어요.');
     } finally {
@@ -407,6 +520,26 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       );
       await _reloadProject();
       _scrollChatToBottom();
+    } on UnsupportedError {
+      final updated = [
+        ...chatMessages,
+        ChatMessageModel(
+          id: _nextChatId(),
+          sender: '나',
+          message: message,
+          time: _nowLabel(),
+          isMe: true,
+          isRead: true,
+          isAi: false,
+          isFile: true,
+        ),
+      ];
+
+      if (!mounted) return;
+      setState(() {
+        project = project.copyWith(chatMessages: updated);
+      });
+      _scrollChatToBottom();
     } catch (e) {
       _showErrorSnackBar('파일 공유에 실패했어요.');
     }
@@ -422,8 +555,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
             decoration: const BoxDecoration(
@@ -505,6 +639,20 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             Navigator.pop(context);
                             await _reloadProject();
                             _showSuccessSnackBar('팀원을 추가했어요.');
+                          } on UnsupportedError {
+                            final newMember = MemberModel(
+                              id: _nextMemberId(),
+                              name: name,
+                              studentId: studentId,
+                            );
+                            if (!mounted) return;
+                            setState(() {
+                              project = project.copyWith(
+                                members: [...members, newMember],
+                              );
+                            });
+                            Navigator.pop(context);
+                            _showSuccessSnackBar('팀원을 추가했어요.');
                           } catch (e) {
                             _showErrorSnackBar('팀원 추가에 실패했어요.');
                           }
@@ -544,8 +692,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
             decoration: const BoxDecoration(
@@ -615,6 +764,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             Navigator.pop(context);
                             await _reloadProject();
                             _showSuccessSnackBar('팀원 정보를 수정했어요.');
+                          } on UnsupportedError {
+                            final updated = [...members];
+                            updated[index] = member.copyWith(
+                              name: name,
+                              studentId: studentId,
+                            );
+                            if (!mounted) return;
+                            setState(() {
+                              project = project.copyWith(members: updated);
+                            });
+                            Navigator.pop(context);
+                            _showSuccessSnackBar('팀원 정보를 수정했어요.');
                           } catch (e) {
                             _showErrorSnackBar('팀원 수정에 실패했어요.');
                           }
@@ -646,6 +807,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       );
       await _reloadProject();
       _showSuccessSnackBar('${member.name} 팀원을 삭제했어요.');
+    } on UnsupportedError {
+      final updated = [...members]..removeAt(index);
+      if (!mounted) return;
+      setState(() {
+        project = project.copyWith(members: updated);
+      });
+      _showSuccessSnackBar('${member.name} 팀원을 삭제했어요.');
     } catch (e) {
       _showErrorSnackBar('팀원 삭제에 실패했어요.');
     }
@@ -666,7 +834,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           builder: (context, setInnerState) {
             return Padding(
               padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom),
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
               child: Container(
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
                 decoration: const BoxDecoration(
@@ -788,6 +957,22 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                 Navigator.pop(context);
                                 await _reloadProject();
                                 _showSuccessSnackBar('일정을 추가했어요.');
+                              } on UnsupportedError {
+                                final newSchedule = ScheduleModel(
+                                  id: _nextScheduleId(),
+                                  title: title,
+                                  date: selectedDate,
+                                  startTime: startTime,
+                                  endTime: endTime,
+                                );
+                                if (!mounted) return;
+                                setState(() {
+                                  project = project.copyWith(
+                                    schedules: [...schedules, newSchedule],
+                                  );
+                                });
+                                Navigator.pop(context);
+                                _showSuccessSnackBar('일정을 추가했어요.');
                               } catch (e) {
                                 _showErrorSnackBar('일정 추가에 실패했어요.');
                               }
@@ -826,7 +1011,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           builder: (context, setInnerState) {
             return Padding(
               padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom),
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
               child: Container(
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
                 decoration: const BoxDecoration(
@@ -949,6 +1135,21 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                 Navigator.pop(context);
                                 await _reloadProject();
                                 _showSuccessSnackBar('일정을 수정했어요.');
+                              } on UnsupportedError {
+                                final updated = [...schedules];
+                                updated[index] = schedule.copyWith(
+                                  title: title,
+                                  date: selectedDate,
+                                  startTime: startTime,
+                                  endTime: endTime,
+                                );
+                                if (!mounted) return;
+                                setState(() {
+                                  project =
+                                      project.copyWith(schedules: updated);
+                                });
+                                Navigator.pop(context);
+                                _showSuccessSnackBar('일정을 수정했어요.');
                               } catch (e) {
                                 _showErrorSnackBar('일정 수정에 실패했어요.');
                               }
@@ -981,6 +1182,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         scheduleId: schedule.id,
       );
       await _reloadProject();
+      _showSuccessSnackBar('${schedule.title} 일정을 삭제했어요.');
+    } on UnsupportedError {
+      final updated = [...schedules]..removeAt(index);
+      if (!mounted) return;
+      setState(() {
+        project = project.copyWith(schedules: updated);
+      });
       _showSuccessSnackBar('${schedule.title} 일정을 삭제했어요.');
     } catch (e) {
       _showErrorSnackBar('일정 삭제에 실패했어요.');
@@ -1074,6 +1282,29 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                 if (!mounted) return;
                                 Navigator.pop(context);
                                 await _reloadProject();
+                                _showSuccessSnackBar('업무를 추가했어요.');
+                              } on UnsupportedError {
+                                final updatedRoles = [...roles];
+                                final updatedTasks = [...role.tasks];
+                                updatedTasks.add(
+                                  TaskModel(
+                                    id: _nextTaskId(),
+                                    title: title,
+                                    priority: '보통',
+                                    dueDate: selectedDate,
+                                    done: false,
+                                    source: '수동',
+                                  ),
+                                );
+                                updatedRoles[roleIndex] =
+                                    role.copyWith(tasks: updatedTasks);
+                                if (!mounted) return;
+                                setState(() {
+                                  project =
+                                      project.copyWith(roles: updatedRoles);
+                                  _refreshAllRoleStatuses();
+                                });
+                                Navigator.pop(context);
                                 _showSuccessSnackBar('업무를 추가했어요.');
                               } catch (e) {
                                 _showErrorSnackBar('업무 추가에 실패했어요.');
@@ -1187,6 +1418,21 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                 Navigator.pop(context);
                                 await _reloadProject();
                                 _showSuccessSnackBar('마감기한을 수정했어요.');
+                              } on UnsupportedError {
+                                final updatedRoles = [...roles];
+                                final updatedTasks = [...role.tasks];
+                                updatedTasks[taskIndex] =
+                                    task.copyWith(dueDate: selectedDate);
+                                updatedRoles[roleIndex] =
+                                    role.copyWith(tasks: updatedTasks);
+                                if (!mounted) return;
+                                setState(() {
+                                  project =
+                                      project.copyWith(roles: updatedRoles);
+                                  _refreshAllRoleStatuses();
+                                });
+                                Navigator.pop(context);
+                                _showSuccessSnackBar('마감기한을 수정했어요.');
                               } catch (e) {
                                 _showErrorSnackBar('마감기한 수정에 실패했어요.');
                               }
@@ -1226,6 +1472,20 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         );
       }
       await _reloadProject();
+      _showSuccessSnackBar('AI 추천 업무를 추가했어요.');
+    } on UnsupportedError {
+      final updatedRoles = [...roles];
+      final updatedTasks = [...role.tasks];
+      updatedTasks.addAll(
+        generated.map((task) => task.copyWith(id: _nextTaskId())),
+      );
+      updatedRoles[roleIndex] = role.copyWith(tasks: updatedTasks);
+
+      if (!mounted) return;
+      setState(() {
+        project = project.copyWith(roles: updatedRoles);
+        _refreshAllRoleStatuses();
+      });
       _showSuccessSnackBar('AI 추천 업무를 추가했어요.');
     } catch (e) {
       _showErrorSnackBar('AI 자동생성에 실패했어요.');
@@ -1651,9 +1911,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                               borderRadius: BorderRadius.circular(18),
                               border: item.isRead
                                   ? null
-                                  : Border.all(
-                                      color: const Color(0xFFFFD6C7),
-                                    ),
+                                  : Border.all(color: const Color(0xFFFFD6C7)),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1772,8 +2030,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                   width: 46,
                                   height: 46,
                                   decoration: BoxDecoration(
-                                    color: fileTypeColor(file.message)
-                                        .withOpacity(0.12),
+                                    color: fileTypeColor(
+                                      file.message,
+                                    ).withOpacity(0.12),
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: Icon(
@@ -2672,8 +2931,9 @@ class _RolesTab extends StatelessWidget {
                             direction: DismissDirection.endToStart,
                             background: Container(
                               alignment: Alignment.centerRight,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.red,
                                 borderRadius: BorderRadius.circular(18),
@@ -2824,8 +3084,10 @@ class _ChatTab extends StatelessWidget {
                         itemCount: messages.length,
                         itemBuilder: (context, index) {
                           final message = messages[index];
-                          final showDateDivider =
-                              _shouldShowDateDivider(messages, index);
+                          final showDateDivider = _shouldShowDateDivider(
+                            messages,
+                            index,
+                          );
 
                           return Column(
                             children: [
@@ -2851,9 +3113,7 @@ class _ChatTab extends StatelessWidget {
                     ),
                     decoration: const BoxDecoration(
                       color: Colors.white,
-                      border: Border(
-                        top: BorderSide(color: Color(0xFFF0E8E4)),
-                      ),
+                      border: Border(top: BorderSide(color: Color(0xFFF0E8E4))),
                       borderRadius: BorderRadius.vertical(
                         bottom: Radius.circular(24),
                       ),
@@ -2937,7 +3197,8 @@ class _ChatTab extends StatelessWidget {
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
                                         valueColor: AlwaysStoppedAnimation(
-                                            Colors.white),
+                                          Colors.white,
+                                        ),
                                       ),
                                     )
                                   : const Icon(
@@ -3235,8 +3496,10 @@ class _SectionCard extends StatelessWidget {
                 onTap: onButtonTap,
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 9,
+                  ),
                   decoration: BoxDecoration(
                     color: _ProjectDetailScreenState.kSoft,
                     borderRadius: BorderRadius.circular(16),
@@ -3500,9 +3763,7 @@ class _TaskTile extends StatelessWidget {
 class _ChatBubble extends StatelessWidget {
   final ChatMessageModel message;
 
-  const _ChatBubble({
-    required this.message,
-  });
+  const _ChatBubble({required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -3641,7 +3902,7 @@ class _ChatBubble extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (message.roleTag != null) ...[
+                          if (message.roleTag.isNotEmpty) ...[
                             Container(
                               margin: const EdgeInsets.only(bottom: 8),
                               padding: const EdgeInsets.symmetric(
@@ -3655,7 +3916,7 @@ class _ChatBubble extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                message.roleTag!,
+                                message.roleTag,
                                 style: TextStyle(
                                   color: isMine
                                       ? Colors.white
@@ -3762,10 +4023,7 @@ class _StatusCountRow extends StatelessWidget {
   final String title;
   final String value;
 
-  const _StatusCountRow({
-    required this.title,
-    required this.value,
-  });
+  const _StatusCountRow({required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -3828,8 +4086,10 @@ class _DialogField extends StatelessWidget {
             ),
             filled: true,
             fillColor: const Color(0xFFFCFAF8),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 15,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(color: Color(0xFFE8DFDA)),
@@ -4023,20 +4283,13 @@ class _SheetHandle extends StatelessWidget {
 class _ChatDateDivider extends StatelessWidget {
   final String text;
 
-  const _ChatDateDivider({
-    required this.text,
-  });
+  const _ChatDateDivider({required this.text});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Expanded(
-          child: Divider(
-            color: Color(0xFFE8DFDA),
-            thickness: 1,
-          ),
-        ),
+        const Expanded(child: Divider(color: Color(0xFFE8DFDA), thickness: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Text(
@@ -4048,12 +4301,7 @@ class _ChatDateDivider extends StatelessWidget {
             ),
           ),
         ),
-        const Expanded(
-          child: Divider(
-            color: Color(0xFFE8DFDA),
-            thickness: 1,
-          ),
-        ),
+        const Expanded(child: Divider(color: Color(0xFFE8DFDA), thickness: 1)),
       ],
     );
   }

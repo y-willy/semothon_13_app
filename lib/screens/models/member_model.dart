@@ -11,18 +11,14 @@ class MemberModel {
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
     return MemberModel(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
-      studentId: json['studentId'] as String? ?? '',
+      id: _toInt(json['id'] ?? json['user_id']),
+      name: _toString(
+        json['name'] ?? json['display_name'] ?? json['username'],
+      ),
+      studentId: _toString(
+        json['studentId'] ?? json['student_id'] ?? json['username'],
+      ),
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'studentId': studentId,
-    };
   }
 
   MemberModel copyWith({
@@ -35,5 +31,22 @@ class MemberModel {
       name: name ?? this.name,
       studentId: studentId ?? this.studentId,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'studentId': studentId,
+    };
+  }
+
+  static int _toInt(dynamic value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static String _toString(dynamic value) {
+    return value?.toString() ?? '';
   }
 }

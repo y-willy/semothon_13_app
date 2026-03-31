@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -8,49 +9,134 @@ class ProjectService {
   final String baseUrl;
   final http.Client client;
 
+  String? _accessToken;
+
   ProjectService({
     required this.baseUrl,
     http.Client? client,
-  }) : client = client ?? http.Client();
+    String? accessToken,
+  })  : client = client ?? http.Client(),
+        _accessToken = accessToken;
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-      };
+  void setAccessToken(String token) {
+    _accessToken = token;
+  }
 
-  // =========================
-  // 🔥 프로젝트 상세 조회
-  // =========================
-  Future<ProjectDetailModel> fetchProjectDetail(String projectNumber) async {
+  void clearAccessToken() {
+    _accessToken = null;
+  }
+
+  Map<String, String> get _headers {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+    };
+
+    final token = _accessToken?.trim();
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    return headers;
+  }
+
+  Future<List<ProjectDetailModel>> fetchProjects() async {
     final response = await client.get(
-      Uri.parse('$baseUrl/projects/$projectNumber'),
+      Uri.parse('$baseUrl/rooms'),
       headers: _headers,
     );
 
-    _throwIfFailed(response, '프로젝트 조회 실패');
+    _throwIfFailed(response, '프로젝트 목록 조회 실패');
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    return ProjectDetailModel.fromJson(data);
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) {
+      throw Exception('프로젝트 목록 응답 형식이 올바르지 않습니다.');
+    }
+
+    return decoded.map<ProjectDetailModel>((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+
+      return ProjectDetailModel.fromJson({
+        'projectNumber': (map['id'] ?? '').toString(),
+        'projectTitle': map['title'] ?? '',
+        'projectGoal': map['description'] ?? '프로젝트 목표를 입력하세요.',
+        'members': const [],
+        'schedules': const [],
+        'roles': const [],
+        'chatMessages': const [],
+        'notifications': const [],
+        'isMock': false,
+      });
+    }).toList();
   }
 
-  // =========================
-  // 👥 팀원
-  // =========================
+  Future<ProjectDetailModel> fetchProjectDetail(String projectNumber) async {
+    final roomId = int.tryParse(projectNumber);
+    if (roomId == null) {
+      throw Exception('유효하지 않은 프로젝트 번호입니다: $projectNumber');
+    }
+
+    final response = await client.get(
+      Uri.parse('$baseUrl/rooms/$roomId'),
+      headers: _headers,
+    );
+
+    _throwIfFailed(response, '프로젝트 상세 조회 실패');
+
+    final data = _decodeMap(response.body);
+
+    return ProjectDetailModel.fromJson({
+      'projectNumber': (data['id'] ?? '').toString(),
+      'projectTitle': data['title'] ?? '',
+      'projectGoal': data['description'] ?? '프로젝트 목표를 입력하세요.',
+      'members': data['members'] ?? const [],
+      'schedules': const [],
+      'roles': const [],
+      'chatMessages': const [],
+      'notifications': const [],
+      'isMock': false,
+    });
+  }
+
+  Future<ProjectDetailModel> createProject({
+    required String title,
+    required String goal,
+    int maxMembers = 10,
+  }) async {
+    final response = await client.post(
+      Uri.parse('$baseUrl/rooms'),
+      headers: _headers,
+      body: jsonEncode({
+        'title': title,
+        'description': goal,
+        'max_members': maxMembers,
+      }),
+    );
+
+    _throwIfFailed(response, '프로젝트 생성 실패', allow201: true);
+
+    final data = _decodeMap(response.body);
+
+    return ProjectDetailModel.fromJson({
+      'projectNumber': (data['id'] ?? '').toString(),
+      'projectTitle': data['title'] ?? '',
+      'projectGoal': data['description'] ?? goal,
+      'members': const [],
+      'schedules': const [],
+      'roles': const [],
+      'chatMessages': const [],
+      'notifications': const [],
+      'isMock': false,
+    });
+  }
 
   Future<void> createMember({
     required String projectNumber,
     required String name,
     required String studentId,
   }) async {
-    final response = await client.post(
-      Uri.parse('$baseUrl/projects/$projectNumber/members'),
-      headers: _headers,
-      body: jsonEncode({
-        'name': name,
-        'studentId': studentId,
-      }),
+    throw UnsupportedError(
+      '현재 백엔드에서는 팀원 추가 시 user_id가 필요합니다.',
     );
-
-    _throwIfFailed(response, '팀원 추가 실패', allow201: true);
   }
 
   Future<void> updateMember({
@@ -59,33 +145,19 @@ class ProjectService {
     required String name,
     required String studentId,
   }) async {
-    final response = await client.put(
-      Uri.parse('$baseUrl/projects/$projectNumber/members/$memberId'),
-      headers: _headers,
-      body: jsonEncode({
-        'name': name,
-        'studentId': studentId,
-      }),
+    throw UnsupportedError(
+      '현재 백엔드 명세에는 팀원 수정 API가 없습니다.',
     );
-
-    _throwIfFailed(response, '팀원 수정 실패');
   }
 
   Future<void> deleteMember({
     required String projectNumber,
     required int memberId,
   }) async {
-    final response = await client.delete(
-      Uri.parse('$baseUrl/projects/$projectNumber/members/$memberId'),
-      headers: _headers,
+    throw UnsupportedError(
+      '현재 백엔드 명세에는 팀원 삭제 API가 없습니다.',
     );
-
-    _throwIfFailed(response, '팀원 삭제 실패', allow204: true);
   }
-
-  // =========================
-  // 📅 일정
-  // =========================
 
   Future<void> createSchedule({
     required String projectNumber,
@@ -95,13 +167,15 @@ class ProjectService {
     required TimeOfDay endTime,
   }) async {
     final response = await client.post(
-      Uri.parse('$baseUrl/projects/$projectNumber/schedules'),
+      Uri.parse('$baseUrl/schedules'),
       headers: _headers,
       body: jsonEncode({
-        'title': title,
-        'date': _dateOnly(date),
-        'startTime': _timeToString(startTime),
-        'endTime': _timeToString(endTime),
+        'day': _weekdayToApiValue(date),
+        'start_time': _timeToApiString(startTime),
+        'end_time': _timeToApiString(endTime),
+        'name': title,
+        'location': null,
+        'description': '프로젝트 #$projectNumber 일정',
       }),
     );
 
@@ -116,14 +190,16 @@ class ProjectService {
     required TimeOfDay startTime,
     required TimeOfDay endTime,
   }) async {
-    final response = await client.put(
-      Uri.parse('$baseUrl/projects/$projectNumber/schedules/$scheduleId'),
+    final response = await client.patch(
+      Uri.parse('$baseUrl/schedules/$scheduleId'),
       headers: _headers,
       body: jsonEncode({
-        'title': title,
-        'date': _dateOnly(date),
-        'startTime': _timeToString(startTime),
-        'endTime': _timeToString(endTime),
+        'day': _weekdayToApiValue(date),
+        'start_time': _timeToApiString(startTime),
+        'end_time': _timeToApiString(endTime),
+        'name': title,
+        'location': null,
+        'description': '프로젝트 #$projectNumber 일정',
       }),
     );
 
@@ -135,16 +211,12 @@ class ProjectService {
     required int scheduleId,
   }) async {
     final response = await client.delete(
-      Uri.parse('$baseUrl/projects/$projectNumber/schedules/$scheduleId'),
+      Uri.parse('$baseUrl/schedules/$scheduleId'),
       headers: _headers,
     );
 
     _throwIfFailed(response, '일정 삭제 실패', allow204: true);
   }
-
-  // =========================
-  // 🧠 역할 / 업무
-  // =========================
 
   Future<void> createTask({
     required String projectNumber,
@@ -154,18 +226,9 @@ class ProjectService {
     required String priority,
     required String source,
   }) async {
-    final response = await client.post(
-      Uri.parse('$baseUrl/projects/$projectNumber/roles/$roleId/tasks'),
-      headers: _headers,
-      body: jsonEncode({
-        'title': title,
-        'dueDate': dueDate.toIso8601String(),
-        'priority': priority,
-        'source': source,
-      }),
+    throw UnsupportedError(
+      '현재 백엔드 명세에는 역할/업무 생성 API가 없습니다.',
     );
-
-    _throwIfFailed(response, '업무 추가 실패', allow201: true);
   }
 
   Future<void> updateTask({
@@ -175,22 +238,9 @@ class ProjectService {
     DateTime? dueDate,
     bool? done,
   }) async {
-    final Map<String, dynamic> body = {};
-
-    if (dueDate != null) {
-      body['dueDate'] = dueDate.toIso8601String();
-    }
-    if (done != null) {
-      body['done'] = done;
-    }
-
-    final response = await client.patch(
-      Uri.parse('$baseUrl/projects/$projectNumber/roles/$roleId/tasks/$taskId'),
-      headers: _headers,
-      body: jsonEncode(body),
+    throw UnsupportedError(
+      '현재 백엔드 명세에는 역할/업무 수정 API가 없습니다.',
     );
-
-    _throwIfFailed(response, '업무 수정 실패');
   }
 
   Future<void> deleteTask({
@@ -198,60 +248,32 @@ class ProjectService {
     required int roleId,
     required int taskId,
   }) async {
-    final response = await client.delete(
-      Uri.parse('$baseUrl/projects/$projectNumber/roles/$roleId/tasks/$taskId'),
-      headers: _headers,
+    throw UnsupportedError(
+      '현재 백엔드 명세에는 역할/업무 삭제 API가 없습니다.',
     );
-
-    _throwIfFailed(response, '업무 삭제 실패', allow204: true);
   }
-
-  // =========================
-  // 💬 채팅
-  // =========================
 
   Future<void> sendChat({
     required String projectNumber,
     required String message,
     required bool isFile,
   }) async {
-    final response = await client.post(
-      Uri.parse('$baseUrl/projects/$projectNumber/chat-messages'),
-      headers: _headers,
-      body: jsonEncode({
-        'message': message,
-        'isFile': isFile,
-      }),
+    throw UnsupportedError(
+      '현재 백엔드 명세에는 채팅 전송 API가 없습니다.',
     );
-
-    _throwIfFailed(response, '채팅 전송 실패', allow201: true);
   }
 
-  // =========================
-  // 🔔 읽음 처리
-  // =========================
-
   Future<void> readAllNotifications(String projectNumber) async {
-    final response = await client.patch(
-      Uri.parse('$baseUrl/projects/$projectNumber/notifications/read-all'),
-      headers: _headers,
+    throw UnsupportedError(
+      '현재 백엔드 명세에는 알림 읽음 처리 API가 없습니다.',
     );
-
-    _throwIfFailed(response, '알림 읽음 실패');
   }
 
   Future<void> readAllChat(String projectNumber) async {
-    final response = await client.patch(
-      Uri.parse('$baseUrl/projects/$projectNumber/chat-messages/read-all'),
-      headers: _headers,
+    throw UnsupportedError(
+      '현재 백엔드 명세에는 채팅 읽음 처리 API가 없습니다.',
     );
-
-    _throwIfFailed(response, '채팅 읽음 실패');
   }
-
-  // =========================
-  // 🔥 공통 에러 처리
-  // =========================
 
   void _throwIfFailed(
     http.Response response,
@@ -264,22 +286,58 @@ class ProjectService {
     if (allow204) valid.add(204);
 
     if (!valid.contains(response.statusCode)) {
+      String detail = '';
+
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          if (decoded['detail'] != null) {
+            detail = decoded['detail'].toString();
+          } else if (decoded['message'] != null) {
+            detail = decoded['message'].toString();
+          }
+        }
+      } catch (_) {}
+
+      if (detail.isNotEmpty) {
+        throw Exception('$message (${response.statusCode}): $detail');
+      }
       throw Exception('$message (${response.statusCode})');
     }
   }
 
-  // =========================
-  // 🛠 유틸
-  // =========================
-
-  static String _dateOnly(DateTime date) {
-    return "${date.year.toString().padLeft(4, '0')}-"
-        "${date.month.toString().padLeft(2, '0')}-"
-        "${date.day.toString().padLeft(2, '0')}";
+  Map<String, dynamic> _decodeMap(String body) {
+    final decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('응답 형식이 올바르지 않습니다.');
+    }
+    return decoded;
   }
 
-  static String _timeToString(TimeOfDay time) {
-    return "${time.hour.toString().padLeft(2, '0')}:"
-        "${time.minute.toString().padLeft(2, '0')}";
+  static String _timeToApiString(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute:00';
+  }
+
+  static String _weekdayToApiValue(DateTime date) {
+    switch (date.weekday) {
+      case DateTime.monday:
+        return 'monday';
+      case DateTime.tuesday:
+        return 'tuesday';
+      case DateTime.wednesday:
+        return 'wednesday';
+      case DateTime.thursday:
+        return 'thursday';
+      case DateTime.friday:
+        return 'friday';
+      case DateTime.saturday:
+        return 'saturday';
+      case DateTime.sunday:
+        return 'sunday';
+      default:
+        return 'monday';
+    }
   }
 }

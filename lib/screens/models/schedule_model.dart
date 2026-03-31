@@ -16,23 +16,18 @@ class ScheduleModel {
   });
 
   factory ScheduleModel.fromJson(Map<String, dynamic> json) {
-    return ScheduleModel(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      title: json['title'] as String? ?? '',
-      date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
-      startTime: _timeOfDayFromString(json['startTime'] as String? ?? '00:00'),
-      endTime: _timeOfDayFromString(json['endTime'] as String? ?? '00:00'),
-    );
-  }
+    final dynamic dateValue = json['date'] ?? json['day'];
+    final dynamic titleValue = json['title'] ?? json['name'];
+    final dynamic startValue = json['startTime'] ?? json['start_time'];
+    final dynamic endValue = json['endTime'] ?? json['end_time'];
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'date': _dateOnly(date),
-      'startTime': _timeOfDayToString(startTime),
-      'endTime': _timeOfDayToString(endTime),
-    };
+    return ScheduleModel(
+      id: _toInt(json['id']),
+      title: _toString(titleValue),
+      date: _parseDate(dateValue),
+      startTime: _parseTimeOfDay(startValue),
+      endTime: _parseTimeOfDay(endValue),
+    );
   }
 
   ScheduleModel copyWith({
@@ -51,28 +46,60 @@ class ScheduleModel {
     );
   }
 
-  static TimeOfDay _timeOfDayFromString(String value) {
-    final parts = value.split(':');
-    if (parts.length != 2) {
-      return const TimeOfDay(hour: 0, minute: 0);
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'date': date.toIso8601String(),
+      'startTime': _timeOfDayToString(startTime),
+      'endTime': _timeOfDayToString(endTime),
+    };
+  }
+
+  String get startTimeText => _timeOfDayToString(startTime);
+  String get endTimeText => _timeOfDayToString(endTime);
+
+  static int _toInt(dynamic value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static String _toString(dynamic value) {
+    return value?.toString() ?? '';
+  }
+
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) return DateTime.now();
+
+    final raw = value.toString();
+    final parsed = DateTime.tryParse(raw);
+    if (parsed != null) return parsed;
+
+    return DateTime.now();
+  }
+
+  static TimeOfDay _parseTimeOfDay(dynamic value) {
+    if (value == null) {
+      return const TimeOfDay(hour: 9, minute: 0);
     }
 
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = int.tryParse(parts[1]) ?? 0;
+    if (value is TimeOfDay) return value;
 
-    return TimeOfDay(hour: hour, minute: minute);
+    final raw = value.toString().trim();
+    final parts = raw.split(':');
+
+    if (parts.length >= 2) {
+      final hour = int.tryParse(parts[0]) ?? 9;
+      final minute = int.tryParse(parts[1]) ?? 0;
+      return TimeOfDay(hour: hour, minute: minute);
+    }
+
+    return const TimeOfDay(hour: 9, minute: 0);
   }
 
   static String _timeOfDayToString(TimeOfDay time) {
-    final h = time.hour.toString().padLeft(2, '0');
-    final m = time.minute.toString().padLeft(2, '0');
-    return '$h:$m';
-  }
-
-  static String _dateOnly(DateTime date) {
-    final y = date.year.toString().padLeft(4, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 }

@@ -5,7 +5,9 @@ import '../services/project_service.dart';
 import 'project_detail_screen.dart';
 
 class ProjectListScreen extends StatefulWidget {
-  const ProjectListScreen({super.key});
+  final String? accessToken;
+
+  const ProjectListScreen({super.key, this.accessToken});
 
   @override
   State<ProjectListScreen> createState() => _ProjectListScreenState();
@@ -23,44 +25,88 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
 
   late final ProjectService _projectService;
 
-  late List<ProjectDetailModel> projects = [
-    const ProjectDetailModel(
-      projectNumber: '13',
-      projectTitle: '세계와 시민',
-      projectGoal: '팀 프로젝트 목표를 설정하세요.',
-      members: [],
-      schedules: [],
-      roles: [],
-      chatMessages: [],
-      notifications: [],
-    ),
-    const ProjectDetailModel(
-      projectNumber: '12',
-      projectTitle: '소프트웨어공학',
-      projectGoal: '프로젝트 목표를 입력하세요.',
-      members: [],
-      schedules: [],
-      roles: [],
-      chatMessages: [],
-      notifications: [],
-    ),
-    const ProjectDetailModel(
-      projectNumber: '7',
-      projectTitle: '데이터베이스',
-      projectGoal: '데이터베이스 프로젝트 목표를 입력하세요.',
-      members: [],
-      schedules: [],
-      roles: [],
-      chatMessages: [],
-      notifications: [],
-    ),
-  ];
+  bool _isLoading = true;
+  String? _loadError;
+
+  List<ProjectDetailModel> projects = [];
 
   @override
   void initState() {
     super.initState();
+
     _projectService = ProjectService(
       baseUrl: 'https://semothon13app-production.up.railway.app',
+      accessToken: widget.accessToken,
+    );
+
+    _loadProjects();
+  }
+
+  Future<void> _loadProjects() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+
+    try {
+      final fetched = await _projectService.fetchProjects();
+
+      if (!mounted) return;
+
+      setState(() {
+        projects = List<ProjectDetailModel>.from(fetched);
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        projects = List<ProjectDetailModel>.from(_fallbackProjects());
+        _loadError = '서버 프로젝트 목록을 불러오지 못해 임시 데이터를 표시합니다.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<ProjectDetailModel> _fallbackProjects() {
+    return const [
+      ProjectDetailModel(
+        projectNumber: '13',
+        projectTitle: '세계와 시민',
+        projectGoal: '팀 프로젝트 목표를 설정하세요.',
+        members: [],
+        schedules: [],
+        roles: [],
+        chatMessages: [],
+        notifications: [],
+      ),
+      ProjectDetailModel(
+        projectNumber: '12',
+        projectTitle: '소프트웨어공학',
+        projectGoal: '프로젝트 목표를 입력하세요.',
+        members: [],
+        schedules: [],
+        roles: [],
+        chatMessages: [],
+        notifications: [],
+      ),
+      ProjectDetailModel(
+        projectNumber: '7',
+        projectTitle: '데이터베이스',
+        projectGoal: '데이터베이스 프로젝트 목표를 입력하세요.',
+        members: [],
+        schedules: [],
+        roles: [],
+        chatMessages: [],
+        notifications: [],
+      ),
+    ];
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -125,8 +171,8 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.25),
-      builder: (context) {
+      barrierColor: Colors.black.withOpacity(0.25),
+      builder: (dialogContext) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
@@ -164,7 +210,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.of(dialogContext).pop(),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size.fromHeight(48),
                           side: const BorderSide(color: kBorder),
@@ -184,32 +230,51 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           final title = titleController.text.trim();
                           final goal = goalController.text.trim();
 
                           if (title.isEmpty) return;
 
-                          final nextNumber = _nextProjectNumber();
-
-                          setState(() {
-                            projects.insert(
-                              0,
-                              ProjectDetailModel(
-                                projectNumber: nextNumber,
-                                projectTitle: title,
-                                projectGoal:
-                                    goal.isEmpty ? '프로젝트 목표를 입력하세요.' : goal,
-                                members: const [],
-                                schedules: const [],
-                                roles: const [],
-                                chatMessages: const [],
-                                notifications: const [],
-                              ),
+                          try {
+                            final created = await _projectService.createProject(
+                              title: title,
+                              goal: goal.isEmpty ? '프로젝트 목표를 입력하세요.' : goal,
                             );
-                          });
 
-                          Navigator.pop(context);
+                            if (!mounted) return;
+
+                            setState(() {
+                              projects = [created, ...projects];
+                            });
+
+                            Navigator.of(dialogContext).pop();
+                            _showSnackBar('프로젝트를 추가했어요.');
+                          } catch (_) {
+                            if (!mounted) return;
+
+                            final nextNumber = _nextProjectNumber();
+
+                            setState(() {
+                              projects = [
+                                ProjectDetailModel(
+                                  projectNumber: nextNumber,
+                                  projectTitle: title,
+                                  projectGoal:
+                                      goal.isEmpty ? '프로젝트 목표를 입력하세요.' : goal,
+                                  members: const [],
+                                  schedules: const [],
+                                  roles: const [],
+                                  chatMessages: const [],
+                                  notifications: const [],
+                                ),
+                                ...projects,
+                              ];
+                            });
+
+                            Navigator.of(dialogContext).pop();
+                            _showSnackBar('서버 생성이 불가능해 임시 프로젝트로 추가했습니다.');
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kWine,
@@ -248,13 +313,14 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
   }
 
   Future<void> _showEditProjectDialog(int index) async {
-    final controller =
-        TextEditingController(text: projects[index].projectTitle);
+    final controller = TextEditingController(
+      text: projects[index].projectTitle,
+    );
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.25),
-      builder: (context) {
+      barrierColor: Colors.black.withOpacity(0.25),
+      builder: (dialogContext) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
@@ -286,7 +352,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.of(dialogContext).pop(),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size.fromHeight(48),
                           side: const BorderSide(color: kBorder),
@@ -316,7 +382,8 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                             );
                           });
 
-                          Navigator.pop(context);
+                          Navigator.of(dialogContext).pop();
+                          _showSnackBar('현재 이름 수정은 로컬 반영만 가능합니다.');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kWine,
@@ -348,8 +415,8 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.25),
-      builder: (context) {
+      barrierColor: Colors.black.withOpacity(0.25),
+      builder: (dialogContext) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
@@ -381,7 +448,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.of(dialogContext).pop(),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size.fromHeight(48),
                           side: const BorderSide(color: kBorder),
@@ -411,7 +478,8 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                             );
                           });
 
-                          Navigator.pop(context);
+                          Navigator.of(dialogContext).pop();
+                          _showSnackBar('현재 목표 수정은 로컬 반영만 가능합니다.');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kWine,
@@ -441,8 +509,8 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
   Future<void> _showDeleteDialog(int index) async {
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.25),
-      builder: (context) {
+      barrierColor: Colors.black.withOpacity(0.25),
+      builder: (dialogContext) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
@@ -480,7 +548,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.of(dialogContext).pop(),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size.fromHeight(48),
                           side: const BorderSide(color: kBorder),
@@ -502,9 +570,12 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           setState(() {
-                            projects.removeAt(index);
+                            projects = List<ProjectDetailModel>.from(projects)
+                              ..removeAt(index);
                           });
-                          Navigator.pop(context);
+
+                          Navigator.of(dialogContext).pop();
+                          _showSnackBar('현재 삭제는 로컬 반영만 가능합니다.');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFD94A3A),
@@ -531,11 +602,11 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
     );
   }
 
-  Future<void> _showProjectMenu(BuildContext context, int index) async {
+  Future<void> _showProjectMenu(int index) async {
     final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (sheetContext) {
         return Container(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
           decoration: const BoxDecoration(
@@ -557,18 +628,18 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
               _MenuTile(
                 icon: Icons.edit_outlined,
                 title: '이름 수정',
-                onTap: () => Navigator.pop(context, 'edit_name'),
+                onTap: () => Navigator.of(sheetContext).pop('edit_name'),
               ),
               _MenuTile(
                 icon: Icons.flag_outlined,
                 title: '목표 수정',
-                onTap: () => Navigator.pop(context, 'edit_goal'),
+                onTap: () => Navigator.of(sheetContext).pop('edit_goal'),
               ),
               _MenuTile(
                 icon: Icons.delete_outline,
                 title: '삭제',
                 textColor: const Color(0xFFD94A3A),
-                onTap: () => Navigator.pop(context, 'delete'),
+                onTap: () => Navigator.of(sheetContext).pop('delete'),
               ),
             ],
           ),
@@ -576,12 +647,14 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
       },
     );
 
+    if (!mounted) return;
+
     if (action == 'edit_name') {
-      _showEditProjectDialog(index);
+      await _showEditProjectDialog(index);
     } else if (action == 'edit_goal') {
-      _showEditGoalDialog(index);
+      await _showEditGoalDialog(index);
     } else if (action == 'delete') {
-      _showDeleteDialog(index);
+      await _showDeleteDialog(index);
     }
   }
 
@@ -589,14 +662,14 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
     final result = await Navigator.push<ProjectDetailModel>(
       context,
       MaterialPageRoute(
-        builder: (_) => ProjectDetailScreen(
-          project: project,
-          service: _projectService,
-        ),
+        builder: (_) =>
+            ProjectDetailScreen(project: project, service: _projectService),
       ),
     );
 
-    if (result != null && mounted) {
+    if (!mounted) return;
+
+    if (result != null) {
       setState(() {
         projects[index] = result;
       });
@@ -609,85 +682,115 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
       backgroundColor: kCream,
       body: SafeArea(
         child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 380),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(18, 22, 18, 24),
-                decoration: BoxDecoration(
-                  color: kCard,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTopSection(context),
-                    const SizedBox(height: 18),
-                    _buildIntroCard(),
-                    const SizedBox(height: 18),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 46,
-                      child: ElevatedButton.icon(
-                        onPressed: _showAddProjectDialog,
-                        icon: const Icon(
-                          Icons.add,
-                          size: 18,
-                          color: Colors.white,
+          child: RefreshIndicator(
+            onRefresh: _loadProjects,
+            color: kWine,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 380),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(18, 22, 18, 24),
+                  decoration: BoxDecoration(
+                    color: kCard,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTopSection(context),
+                      const SizedBox(height: 18),
+                      _buildIntroCard(),
+                      if (_loadError != null) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF4F1),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: const Color(0xFFFFD6CC),
+                            ),
+                          ),
+                          child: Text(
+                            _loadError!,
+                            style: const TextStyle(
+                              color: Color(0xFF9A4D36),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              height: 1.4,
+                            ),
+                          ),
                         ),
-                        label: const Text(
-                          '새 프로젝트 추가',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                      ],
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 46,
+                        child: ElevatedButton.icon(
+                          onPressed: _showAddProjectDialog,
+                          icon: const Icon(
+                            Icons.add,
+                            size: 18,
                             color: Colors.white,
                           ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          backgroundColor: kWine,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          label: const Text(
+                            '새 프로젝트 추가',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: kWine,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 22),
-                    const Text(
-                      '✶ 내 프로젝트',
-                      style: TextStyle(
-                        color: kWine,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 22),
+                      const Text(
+                        '✶ 내 프로젝트',
+                        style: TextStyle(
+                          color: kWine,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    projects.isEmpty
-                        ? const _EmptyProjectView()
-                        : ListView.separated(
-                            physics: const NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
-                            itemCount: projects.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 14),
-                            itemBuilder: (context, index) {
-                              final project = projects[index];
-                              final summaryStatus = _summaryStatus(project);
+                      const SizedBox(height: 14),
+                      if (_isLoading)
+                        const _LoadingProjectView()
+                      else if (projects.isEmpty)
+                        const _EmptyProjectView()
+                      else
+                        ListView.separated(
+                          physics: const NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: projects.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            final project = projects[index];
+                            final summaryStatus = _summaryStatus(project);
 
-                              return _ProjectCard(
-                                project: project,
-                                statusColor: _statusColor(summaryStatus),
-                                summaryStatus: summaryStatus,
-                                updatedText: _updatedText(project),
-                                onTap: () => _openProject(project, index),
-                                onMoreTap: () =>
-                                    _showProjectMenu(context, index),
-                              );
-                            },
-                          ),
-                  ],
+                            return _ProjectCard(
+                              project: project,
+                              statusColor: _statusColor(summaryStatus),
+                              summaryStatus: summaryStatus,
+                              updatedText: _updatedText(project),
+                              onTap: () => _openProject(project, index),
+                              onMoreTap: () => _showProjectMenu(index),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -708,11 +811,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.arrow_back_ios_new,
-                  size: 16,
-                  color: kSub,
-                ),
+                Icon(Icons.arrow_back_ios_new, size: 16, color: kSub),
                 SizedBox(width: 4),
                 Text(
                   '홈으로',
@@ -756,11 +855,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
       ),
       child: const Text(
         '현재 진행 중인 프로젝트와 상태를 한눈에 확인하고, 필요하면 이름이나 목표를 바로 수정해보세요.',
-        style: TextStyle(
-          fontSize: 15,
-          color: Color(0xFF4B3A3A),
-          height: 1.5,
-        ),
+        style: TextStyle(fontSize: 15, color: Color(0xFF4B3A3A), height: 1.5),
       ),
     );
   }
@@ -855,7 +950,7 @@ class _ProjectCard extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.10),
+                  color: statusColor.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -909,10 +1004,7 @@ class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String text;
 
-  const _InfoChip({
-    required this.icon,
-    required this.text,
-  });
+  const _InfoChip({required this.icon, required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -925,17 +1017,13 @@ class _InfoChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 17,
-            color: _ProjectListScreenState.kSub,
-          ),
+          Icon(icon, size: 17, color: _ProjectListScreenState.kSub),
           const SizedBox(width: 6),
           Text(
             text,
             style: const TextStyle(
-              color: _ProjectListScreenState.kSub,
-              fontSize: 12,
+              color: _ProjectListScreenState.kText,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -964,9 +1052,9 @@ class _DialogField extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
+            color: _ProjectListScreenState.kText,
             fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: _ProjectListScreenState.kSub,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
@@ -985,14 +1073,13 @@ class _DialogField extends StatelessWidget {
               vertical: 14,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
                 color: _ProjectListScreenState.kBorder,
-                width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
                 color: _ProjectListScreenState.kWine,
                 width: 1.2,
@@ -1024,23 +1111,17 @@ class _MenuTile extends StatelessWidget {
 
     return ListTile(
       onTap: onTap,
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF7F1EE),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: color),
-      ),
+      leading: Icon(icon, color: color),
       title: Text(
         title,
         style: TextStyle(
           color: color,
-          fontWeight: FontWeight.w700,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
         ),
       ),
+      contentPadding: EdgeInsets.zero,
+      minLeadingWidth: 24,
     );
   }
 }
@@ -1052,36 +1133,74 @@ class _EmptyProjectView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
       decoration: BoxDecoration(
-        color: _ProjectListScreenState.kSoftCard,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _ProjectListScreenState.kBorder),
+        color: const Color(0xFFFCFBFB),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEAE1E1)),
       ),
       child: const Column(
         children: [
           Icon(
             Icons.folder_open_outlined,
-            size: 50,
+            size: 34,
             color: _ProjectListScreenState.kSub,
           ),
-          SizedBox(height: 14),
+          SizedBox(height: 12),
           Text(
-            '아직 프로젝트가 없습니다',
+            '아직 프로젝트가 없습니다.',
             style: TextStyle(
               color: _ProjectListScreenState.kText,
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: 8),
+          SizedBox(height: 6),
           Text(
-            '상단의 새 프로젝트 버튼으로 시작해보세요',
-            textAlign: TextAlign.center,
+            '새 프로젝트를 추가해서 시작해보세요.',
             style: TextStyle(
               color: _ProjectListScreenState.kSub,
               fontSize: 14,
-              fontWeight: FontWeight.w500,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingProjectView extends StatelessWidget {
+  const _LoadingProjectView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCFBFB),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEAE1E1)),
+      ),
+      child: const Column(
+        children: [
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.4,
+              color: _ProjectListScreenState.kWine,
+            ),
+          ),
+          SizedBox(height: 14),
+          Text(
+            '프로젝트를 불러오는 중입니다...',
+            style: TextStyle(
+              color: _ProjectListScreenState.kSub,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

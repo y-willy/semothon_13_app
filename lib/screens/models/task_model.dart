@@ -5,6 +5,7 @@ class TaskModel {
   final DateTime dueDate;
   final bool done;
   final String source;
+  final String assignee;
 
   const TaskModel({
     required this.id,
@@ -13,18 +14,47 @@ class TaskModel {
     required this.dueDate,
     required this.done,
     required this.source,
+    this.assignee = '',
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
     return TaskModel(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      title: json['title'] as String? ?? '',
-      priority: json['priority'] as String? ?? '보통',
-      dueDate:
-          DateTime.tryParse(json['dueDate'] as String? ?? '') ?? DateTime.now(),
-      done: json['done'] as bool? ?? false,
-      source: json['source'] as String? ?? '수동',
+      id: _toInt(json['id']),
+      title: _toString(json['title']),
+      priority: _toString(json['priority']),
+      dueDate: _parseDateTime(json['dueDate'] ?? json['due_date']),
+      done: _toBool(json['done']),
+      source: _toString(json['source']),
+      assignee: _toString(json['assignee']),
     );
+  }
+
+  TaskModel copyWith({
+    int? id,
+    String? title,
+    String? priority,
+    DateTime? dueDate,
+    bool? done,
+    String? source,
+    String? assignee,
+  }) {
+    return TaskModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      priority: priority ?? this.priority,
+      dueDate: dueDate ?? this.dueDate,
+      done: done ?? this.done,
+      source: source ?? this.source,
+      assignee: assignee ?? this.assignee,
+    );
+  }
+
+  bool get isOverdue {
+    if (done) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return due.isBefore(today);
   }
 
   Map<String, dynamic> toJson() {
@@ -35,24 +65,26 @@ class TaskModel {
       'dueDate': dueDate.toIso8601String(),
       'done': done,
       'source': source,
+      'assignee': assignee,
     };
   }
 
-  TaskModel copyWith({
-    int? id,
-    String? title,
-    String? priority,
-    DateTime? dueDate,
-    bool? done,
-    String? source,
-  }) {
-    return TaskModel(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      priority: priority ?? this.priority,
-      dueDate: dueDate ?? this.dueDate,
-      done: done ?? this.done,
-      source: source ?? this.source,
-    );
+  static int _toInt(dynamic value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static String _toString(dynamic value) {
+    return value?.toString() ?? '';
+  }
+
+  static bool _toBool(dynamic value) {
+    if (value is bool) return value;
+    return value?.toString().toLowerCase() == 'true';
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    return DateTime.tryParse(value.toString()) ?? DateTime.now();
   }
 }

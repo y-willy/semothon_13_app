@@ -17,24 +17,14 @@ class RoleModel {
 
   factory RoleModel.fromJson(Map<String, dynamic> json) {
     return RoleModel(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      title: json['title'] as String? ?? '',
-      assignee: json['assignee'] as String? ?? '',
-      status: json['status'] as String? ?? '시작 전',
+      id: _toInt(json['id']),
+      title: _toString(json['title']),
+      assignee: _toString(json['assignee']),
+      status: _toString(json['status']),
       tasks: (json['tasks'] as List<dynamic>? ?? [])
-          .map((e) => TaskModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => TaskModel.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'assignee': assignee,
-      'status': status,
-      'tasks': tasks.map((e) => e.toJson()).toList(),
-    };
   }
 
   RoleModel copyWith({
@@ -51,5 +41,24 @@ class RoleModel {
       status: status ?? this.status,
       tasks: tasks ?? this.tasks,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'assignee': assignee,
+      'status': status,
+      'tasks': tasks.map((e) => e.toJson()).toList(),
+    };
+  }
+
+  static int _toInt(dynamic value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static String _toString(dynamic value) {
+    return value?.toString() ?? '';
   }
 }
