@@ -1,5 +1,5 @@
 from datetime import datetime, time
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 
@@ -7,7 +7,7 @@ from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 class DBCheckResponse(BaseModel):
     success: bool
     message: str
-    result: Optional[dict] = None
+    result: Optional[Any] = None
     error: Optional[str] = None
 
 
