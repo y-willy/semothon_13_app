@@ -41,6 +41,18 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController customRoleController = TextEditingController();
   List<String> customRoles = [];
 
+  // 취미 (복수 선택)
+  Set<String> selectedHobbies = {};
+  final List<String> hobbies = [
+    '영화/드라마',
+    '운동/스포츠 시청',
+    '독서',
+    '유튜브/릴스 시청',
+  ];
+  // 기타 취미 직접 입력
+  final TextEditingController customHobbyController = TextEditingController();
+  List<String> customHobbies = [];
+
   // 시간표 데이터
   final List<String> days = ['월', '화', '수', '목', '금'];
   final int startHour = 9;
@@ -64,6 +76,7 @@ class _SignupScreenState extends State<SignupScreen> {
     passwordController.dispose();
     personalityController.dispose();
     customRoleController.dispose();
+    customHobbyController.dispose();
     super.dispose();
   }
 
@@ -348,6 +361,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 final allRoles = [...selectedRoles, ...customRoles];
                 profileData['preferred_roles'] = allRoles.join(', ');
               }
+              if (selectedHobbies.isNotEmpty || customHobbies.isNotEmpty) {
+                final allHobbies = [...selectedHobbies, ...customHobbies];
+                profileData['hobbies'] = allHobbies.join(', ');
+              }
 
               await http.patch(
                 Uri.parse('https://semothon13app-production.up.railway.app/profile/me'),
@@ -355,16 +372,26 @@ class _SignupScreenState extends State<SignupScreen> {
                 body: jsonEncode(profileData),
               );
 
-              // 시간표 저장
+              // 시간표 저장 - 일정 하나씩 POST /schedules로 전송
               if (scheduleItems.isNotEmpty) {
-                final scheduleData = getScheduleData();
-                debugPrint('시간표 데이터: ${jsonEncode(scheduleData)}');
-                // TODO: 백엔드 API 준비되면 아래 주석 해제
-                // await http.post(
-                //   Uri.parse('https://semothon13app-production.up.railway.app/schedule/me'),
-                //   headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
-                //   body: jsonEncode({'schedule': scheduleData}),
-                // );
+                for (var item in scheduleItems) {
+                  final startTime = '${item['startHour'].toString().padLeft(2, '0')}:${item['startMin'].toString().padLeft(2, '0')}';
+                  final endTime = '${item['endHour'].toString().padLeft(2, '0')}:${item['endMin'].toString().padLeft(2, '0')}';
+
+                  await http.post(
+                    Uri.parse('https://semothon13app-production.up.railway.app/schedules'),
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': 'Bearer $token',
+                    },
+                    body: jsonEncode({
+                      'day': item['day'],
+                      'start_time': startTime,
+                      'end_time': endTime,
+                      'name': item['title'],
+                    }),
+                  );
+                }
               }
             }
           }
@@ -529,7 +556,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           const SizedBox(height: 18),
 
                           // 자신있는 역할
-                          _label('자신있는 역할 (최대 4개 선택)'), const SizedBox(height: 10),
+                          _label('자신있는 역할'), const SizedBox(height: 10),
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
@@ -642,6 +669,115 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 16),
 
+                    // ─── 취미 카드 ───
+                    _buildCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Center(child: Text('취미', style: TextStyle(color: primaryColor, fontSize: 16, fontWeight: FontWeight.w600))),
+                          const SizedBox(height: 6),
+                          const Center(child: Text('해당하는 취미를 선택해주세요', style: TextStyle(color: subtitleColor, fontSize: 12))),
+                          const SizedBox(height: 14),
+
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: hobbies.map((hobby) {
+                              final isSelected = selectedHobbies.contains(hobby);
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    if (isSelected) { selectedHobbies.remove(hobby); }
+                                    else { selectedHobbies.add(hobby); }
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? primaryColor : Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: isSelected ? primaryColor : cardBorder, width: 1.5),
+                                  ),
+                                  child: Text(hobby, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isSelected ? Colors.white : textDark)),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // 기타 취미 직접 입력
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: customHobbyController,
+                                  decoration: InputDecoration(
+                                    hintText: '기타 취미 직접 입력',
+                                    hintStyle: const TextStyle(color: Color(0xFFA58787), fontSize: 13),
+                                    filled: true,
+                                    fillColor: inputFillColor,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: cardBorder, width: 1)),
+                                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: primaryColor, width: 1.2)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  final text = customHobbyController.text.trim();
+                                  if (text.isNotEmpty && !customHobbies.contains(text)) {
+                                    setState(() {
+                                      customHobbies.add(text);
+                                      customHobbyController.clear();
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: primaryColor,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Icon(Icons.add, size: 18, color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // 추가된 기타 취미 표시
+                          if (customHobbies.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: customHobbies.map((hobby) {
+                                return Container(
+                                  padding: const EdgeInsets.only(left: 14, right: 6, top: 8, bottom: 8),
+                                  decoration: BoxDecoration(
+                                    color: primaryColor,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(hobby, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white)),
+                                      const SizedBox(width: 4),
+                                      GestureDetector(
+                                        onTap: () => setState(() => customHobbies.remove(hobby)),
+                                        child: const Icon(Icons.close, size: 16, color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
                     // ─── 시간표 카드 ───
                     _buildCard(
                       child: Column(
@@ -688,7 +824,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 22),
 
-                    // ─── 회원가입 버튼 ──
+                    // ─── 회원가입 버튼 ───
                     SizedBox(
                       width: double.infinity, height: 44,
                       child: ElevatedButton.icon(

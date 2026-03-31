@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/home/project_list_screen.dart';
+import 'screens/home/home_screen.dart';
 
 void main() {
   runApp(const AicoApp());
@@ -20,7 +20,7 @@ class AicoApp extends StatelessWidget {
           seedColor: const Color(0xFFA31621),
         ),
       ),
-      home: const ProjectListScreen(),
+      home: HomeScreen(userName: '테스트', token: null),
     );
   }
 }
