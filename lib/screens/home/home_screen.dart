@@ -44,6 +44,17 @@ class HomeScreen extends StatelessWidget {
                     _buildActionButtons(context),
                     const SizedBox(height: 24),
                     const Text(
+                      '✶ 내 프로필 수정하기',
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _buildProfileEditCard(context),
+                    const SizedBox(height: 24),
+                    const Text(
                       '✶ 내 프로젝트 바로가기',
                       style: TextStyle(
                         color: primaryColor,
@@ -53,8 +64,6 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     _buildProjectShortcutCard(context),
-                    const SizedBox(height: 14),
-                    _buildProfileEditCard(context),
                   ],
                 ),
               ),
