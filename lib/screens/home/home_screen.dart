@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import '../login/login_screen.dart';
 import 'project_list_screen.dart';
 import 'profile_edit_screen.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final String userName;
   final String? token;
-  HomeScreen({super.key, required this.userName, this.token});
+  const HomeScreen({super.key, required this.userName, this.token});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   static const Color primaryColor = Color(0xFFA31621);
   static const Color bgColor = Color(0xFFF6F1F1);
   static const Color cardColor = Colors.white;
@@ -16,6 +23,43 @@ class HomeScreen extends StatelessWidget {
   static const Color softCardColor = Color(0xFFFCFBFB);
   static const Color successBgColor = Color(0xFFDDF5E7);
   static const Color successTextColor = Color(0xFF2E8B57);
+
+  static const String baseUrl = 'https://semothon13app-production.up.railway.app';
+
+  late String displayName;
+
+  @override
+  void initState() {
+    super.initState();
+    displayName = widget.userName;
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    if (widget.token == null || widget.token!.isEmpty) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/profile/me'),
+        headers: {
+          'Authorization': 'Bearer ${widget.token}',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (!mounted) return;
+        setState(() {
+          final fetchedName = (data['display_name'] ?? '').toString().trim();
+          if (fetchedName.isNotEmpty) {
+            displayName = fetchedName;
+          }
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +145,7 @@ class HomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${userName.isEmpty ? "사용자" : userName}님, 환영합니다!',
+                  '${displayName.isEmpty ? "사용자" : displayName}님, 환영합니다!',
                   style: const TextStyle(
                     color: Color(0xFF3A2A2A),
                     fontSize: 28,
@@ -122,13 +166,12 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        // 로그아웃 버튼
         OutlinedButton.icon(
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
+              (route) => false,
             );
           },
           icon: const Icon(Icons.logout, size: 14, color: subtitleColor),
@@ -181,8 +224,15 @@ class HomeScreen extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: () {},
               icon: const Icon(Icons.add, color: primaryColor, size: 20),
-              label: const Text('새 팀 생성하기', style: TextStyle(color: Color(0xFF4B3A3A), fontSize: 15, fontWeight: FontWeight.w600)),
-              style: OutlinedButton.styleFrom(backgroundColor: const Color(0xFFFFFAFA), side: const BorderSide(color: borderColor), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+              label: const Text(
+                '새 팀 생성하기',
+                style: TextStyle(color: Color(0xFF4B3A3A), fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFFAFA),
+                side: const BorderSide(color: borderColor),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
             ),
           ),
         ),
@@ -193,8 +243,15 @@ class HomeScreen extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: () {},
               icon: const Icon(Icons.groups_2_outlined, color: primaryColor, size: 18),
-              label: const Text('팀 코드로 참여하기', style: TextStyle(color: Color(0xFF4B3A3A), fontSize: 15, fontWeight: FontWeight.w600)),
-              style: OutlinedButton.styleFrom(backgroundColor: const Color(0xFFFFFAFA), side: const BorderSide(color: borderColor), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+              label: const Text(
+                '팀 코드로 참여하기',
+                style: TextStyle(color: Color(0xFF4B3A3A), fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFFAFA),
+                side: const BorderSide(color: borderColor),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
             ),
           ),
         ),
@@ -224,16 +281,27 @@ class HomeScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Expanded(child: Text('내 프로젝트 보러가기', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF3A2A2A)))),
+                  const Expanded(
+                    child: Text(
+                      '내 프로젝트 보러가기',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF3A2A2A)),
+                    ),
+                  ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(color: successBgColor, borderRadius: BorderRadius.circular(999)),
-                    child: const Text('바로가기', style: TextStyle(color: successTextColor, fontSize: 12, fontWeight: FontWeight.w700)),
+                    child: const Text(
+                      '바로가기',
+                      style: TextStyle(color: successTextColor, fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              const Text('현재 진행 중인 프로젝트 목록을 확인해보세요', style: TextStyle(fontSize: 14, color: subtitleColor, fontWeight: FontWeight.w500)),
+              const Text(
+                '현재 진행 중인 프로젝트 목록을 확인해보세요',
+                style: TextStyle(fontSize: 14, color: subtitleColor, fontWeight: FontWeight.w500),
+              ),
               const SizedBox(height: 18),
               const Row(
                 children: [
@@ -256,13 +324,14 @@ class HomeScreen extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ProfileEditScreen(token: token),
+              builder: (_) => ProfileEditScreen(token: widget.token),
             ),
           );
+          _loadProfile();
         },
         child: Ink(
           width: double.infinity,

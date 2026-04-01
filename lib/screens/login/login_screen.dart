@@ -29,61 +29,92 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void onLoginPressed() async {
-    final Uri url = Uri.parse(
-      'https://semothon13app-production.up.railway.app/auth/login',
+ void onLoginPressed() async {
+  final Uri loginUrl = Uri.parse(
+    'https://semothon13app-production.up.railway.app/auth/login',
+  );
+
+  try {
+    final loginResponse = await http.post(
+      loginUrl,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        "username": emailController.text.trim(),
+        "password": passwordController.text.trim(),
+      }),
     );
 
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          "username": emailController.text.trim(),
-          "password": passwordController.text.trim(),
-        }),
-      );
+    final loginData = jsonDecode(loginResponse.body);
 
-      final data = jsonDecode(response.body);
+    if (loginResponse.statusCode == 200) {
+      final token = loginData['access_token'];
 
-      if (response.statusCode == 200) {
-        if (!mounted) return;
+      String realName = '사용자';
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => HomeScreen(
-              userName: data['display_name'] ??
-                  data['username'] ??
-                  emailController.text.trim(),
-              token: data['access_token'],
-            ),
-          ),
+      try {
+        final profileUrl = Uri.parse(
+          'https://semothon13app-production.up.railway.app/profile/me',
         );
-      } else {
-        if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              data['detail']?.toString() ??
-                  data['message']?.toString() ??
-                  '로그인 실패',
-            ),
-          ),
+        final profileResponse = await http.get(
+          profileUrl,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
         );
+
+        if (profileResponse.statusCode == 200) {
+          print(profileResponse.body);
+          final profileData = jsonDecode(profileResponse.body);
+
+          realName =
+              profileData['name'] ??
+              profileData['real_name'] ??
+              profileData['display_name'] ??
+              loginData['display_name'] ??
+              '사용자';
+        } else {
+          realName = loginData['display_name'] ?? '사용자';
+        }
+      } catch (_) {
+        realName = loginData['display_name'] ?? '사용자';
       }
-    } catch (e) {
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HomeScreen(
+            userName: realName,
+            token: token,
+          ),
+        ),
+      );
+    } else {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('서버 연결 실패: $e')),
+        SnackBar(
+          content: Text(
+            loginData['detail']?.toString() ??
+                loginData['message']?.toString() ??
+                '로그인 실패',
+          ),
+        ),
       );
     }
-  }
+  } catch (e) {
+    if (!mounted) return;
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('서버 연결 실패: $e')),
+    );
+  }
+}
   void onSignupPressed() {
     Navigator.push(
       context,
