@@ -755,7 +755,6 @@ Future<void> _loadProjects() async {
     const SizedBox(height: 18),
     _buildActionButtons(context),
     const SizedBox(height: 24),
-    _buildProjectIntroCard(),
 if (_projectLoadError != null) ...[
   const SizedBox(height: 14),
   Container(
@@ -780,40 +779,12 @@ if (_projectLoadError != null) ...[
   ),
 ],
 const SizedBox(height: 18),
-SizedBox(
-  width: double.infinity,
-  height: 46,
-  child: ElevatedButton.icon(
-    onPressed: _showAddProjectDialog,
-    icon: const Icon(
-      Icons.add,
-      size: 18,
-      color: Colors.white,
-    ),
-    label: const Text(
-      '새 프로젝트 추가',
-      style: TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w700,
-        color: Colors.white,
-      ),
-    ),
-    style: ElevatedButton.styleFrom(
-      elevation: 0,
-      backgroundColor: primaryColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-    ),
-  ),
-),
-const SizedBox(height: 22),
 const Text(
-  '✶ 내 프로젝트',
+  '내 프로젝트 목록',
   style: TextStyle(
-    color: primaryColor,
-    fontSize: 24,
-    fontWeight: FontWeight.w600,
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
+    color: Color(0xFF3A2A2A),
   ),
 ),
 const SizedBox(height: 14),
@@ -1025,64 +996,64 @@ Widget _buildTodayTaskItem(String text) {
   );
 }
   Widget _buildActionButtons(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: SizedBox(
-            height: 56,
-            child: OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.add, color: primaryColor, size: 20),
-              label: const Text(
-                '새 팀 생성하기',
-                style: TextStyle(
-                  color: Color(0xFF4B3A3A),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
+  return Row(
+    children: [
+      Expanded(
+        child: SizedBox(
+          height: 56,
+          child: OutlinedButton.icon(
+            onPressed: _showAddProjectDialog,
+            icon: const Icon(Icons.add, color: primaryColor, size: 20),
+            label: const Text(
+              '새 팀 생성하기',
+              style: TextStyle(
+                color: Color(0xFF4B3A3A),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
               ),
-              style: OutlinedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFFAFA),
-                side: const BorderSide(color: borderColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+            ),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFFAFA),
+              side: const BorderSide(color: borderColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: SizedBox(
-            height: 56,
-            child: OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(
-                Icons.groups_2_outlined,
-                color: primaryColor,
-                size: 18,
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: SizedBox(
+          height: 56,
+          child: OutlinedButton.icon(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.groups_2_outlined,
+              color: primaryColor,
+              size: 18,
+            ),
+            label: const Text(
+              '팀 코드로 참여하기',
+              style: TextStyle(
+                color: Color(0xFF4B3A3A),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
               ),
-              label: const Text(
-                '팀 코드로 참여하기',
-                style: TextStyle(
-                  color: Color(0xFF4B3A3A),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFFAFA),
-                side: const BorderSide(color: borderColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+            ),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFFAFA),
+              side: const BorderSide(color: borderColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildProfileEditCard(BuildContext context) {
     return Material(
@@ -1181,28 +1152,64 @@ Widget _buildTodayTaskItem(String text) {
     );
   }
 
-  Widget _buildProjectIntroCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      decoration: BoxDecoration(
-        color: softCardColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFEAE1E1)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+Widget _buildProjectIntroCard() {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: _showAddProjectDialog,
+      child: Ink(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFEAE1E1)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0D000000),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '새 프로젝트 추가',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF3A2A2A),
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.add_circle_outline_rounded,
+                  color: primaryColor,
+                  size: 22,
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Text(
+              '새 프로젝트를 만들고 팀플을 바로 시작해보세요.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6B5B5B),
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
       ),
-      child: const Text(
-        '현재 진행 중인 프로젝트와 상태를 한눈에 확인하고, 필요하면 이름이나 목표를 바로 수정해보세요.',
-        style: TextStyle(fontSize: 15, color: Color(0xFF4B3A3A), height: 1.5),
-      ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _ProjectCard extends StatelessWidget {
