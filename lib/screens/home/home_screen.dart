@@ -6,6 +6,9 @@ import 'package:http/http.dart' as http;
 import '../models/project_detail_model.dart';
 import '../services/project_service.dart';
 import 'project_detail_screen.dart';
+import 'widgets/home_calendar_card.dart';
+import 'widgets/home_today_ai_card.dart';
+import 'widgets/project_badge_section.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? userName;
@@ -740,16 +743,19 @@ Future<void> _loadProjects() async {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTopSection(context),
-                      const SizedBox(height: 22),
-                      _buildIntroCard(),
-                      const SizedBox(height: 18),
-                      _buildActionButtons(context),
-                      
-                      const SizedBox(height: 24),
-                      _buildProjectIntroCard(),
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    _buildTopSection(context),
+    const SizedBox(height: 22),
+    const ProjectBadgeSection(),
+    const SizedBox(height: 22),
+    const HomeTodayAiCard(),
+    const SizedBox(height: 18),
+    const HomeCalendarCard(),
+    const SizedBox(height: 18),
+    _buildActionButtons(context),
+    const SizedBox(height: 24),
+    _buildProjectIntroCard(),
 if (_projectLoadError != null) ...[
   const SizedBox(height: 14),
   Container(
@@ -987,48 +993,37 @@ Widget _buildTopSection(BuildContext context) {
   );
 }
 
- Widget _buildIntroCard() {
+ 
+Widget _buildTodayTaskItem(String text) {
   return Container(
     width: double.infinity,
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     decoration: BoxDecoration(
-      color: softCardColor,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: const Color(0xFFEAE1E1)),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x0D000000),
-          blurRadius: 10,
-          offset: Offset(0, 4),
-        ),
-      ],
+      color: const Color(0xFFF9F1F1),
+      borderRadius: BorderRadius.circular(12),
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    child: Row(
       children: [
-        Center(
-          child: Image.asset(
-            'assets/images/hikhuong-nk.png',
-            width: 120,
-            height: 120,
-            fit: BoxFit.contain,
-          ),
+        const Icon(
+          Icons.check_circle_outline,
+          size: 18,
+          color: primaryColor,
         ),
-        const SizedBox(height: 12),
-        const Text(
-          '안녕하세요! 저는 AI 팀장 쿠옹이에요.\n팀플을 시작하거나 기존 팀에 참여해보세요!',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 15,
-            color: Color(0xFF4B3A3A),
-            height: 1.45,
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF3A2A2A),
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
     ),
   );
 }
-
   Widget _buildActionButtons(BuildContext context) {
     return Row(
       children: [
