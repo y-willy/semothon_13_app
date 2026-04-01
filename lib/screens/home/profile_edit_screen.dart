@@ -165,9 +165,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
     try {
       final Map<String, dynamic> profileData = {
-        'display_name': nameController.text.trim(),
-        'major': majorController.text.trim(),
+        'display_name': nameController.text.trim()
       };
+      if (majorController.text.trim().isNotEmpty) {
+        profileData['major'] = majorController.text.trim();
+      }
       if (selectedMBTI != null) profileData['mbti'] = selectedMBTI;
       if (personalityController.text.trim().isNotEmpty) {
         profileData['personality_summary'] = personalityController.text.trim();
@@ -178,13 +180,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       if (selectedHobbies.isNotEmpty || customHobbies.isNotEmpty) {
         profileData['hobby'] = [...selectedHobbies, ...customHobbies].join(', ');
       }
-
       await http.patch(
         Uri.parse('$baseUrl/profile/me'),
         headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${widget.token}'},
         body: jsonEncode(profileData),
       );
-
       // 기존 시간표 삭제 후 새로 저장
       final existingSchedules = scheduleItems.where((s) => s['serverId'] != null).toList();
       for (var item in existingSchedules) {
