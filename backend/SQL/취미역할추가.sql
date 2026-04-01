@@ -1,0 +1,4 @@
+USE semothon;
+ALTER TABLE user_profiles
+ADD COLUMN hobby VARCHAR(255),
+ADD COLUMN role VARCHAR(255);
