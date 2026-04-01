@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'screens/login/login_screen.dart';
+import 'screens/home/home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +23,7 @@ class AicoApp extends StatelessWidget {
           seedColor: const Color(0xFFA31621),
         ),
       ),
-      home: const LoginScreen(),
+      home: const HomeScreen(),
     );
   }
 }
