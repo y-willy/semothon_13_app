@@ -9,7 +9,10 @@ class ProjectService {
   final String baseUrl;
   final http.Client client;
 
+
   String? _accessToken;
+
+  String? get accessToken => _accessToken;
 
   ProjectService({
     required this.baseUrl,
@@ -35,7 +38,6 @@ class ProjectService {
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }
-
     return headers;
   }
 
