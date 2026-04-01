@@ -104,7 +104,6 @@ class TokenPayload(BaseModel):
     exp: int
     
 class ProfileUpdate(BaseModel):
-    
     email: EmailStr | None = None
     username: Optional[str] = None
     display_name: str | None = Field(default=None, max_length=50)
@@ -112,6 +111,8 @@ class ProfileUpdate(BaseModel):
     major: str | None = Field(default=None, max_length=100)
     personality_summary: str | None = None
     profile_image_url: str | None = Field(default=None, max_length=255)
+    hobby: str | None = None
+    role: str | None = None
 
     @field_validator("mbti")
     @classmethod
@@ -132,6 +133,8 @@ class PublicProfileResponse(BaseModel):
     major: str | None = None
     personality_summary: str | None = None
     profile_image_url: str | None = None
+    hobby: str | None = None
+    role: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

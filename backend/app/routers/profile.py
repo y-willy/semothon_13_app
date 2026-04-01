@@ -30,8 +30,9 @@ def to_public_profile(user: User) -> PublicProfileResponse:
         bio=profile.bio if profile else None,
         personality_summary=profile.personality_summary if profile else None,
         profile_image_url=profile.profile_image_url if profile else None,
+        hobby=profile.hobby if profile else None,
+        role=profile.role if profile else None,
     )
-
 
 def to_my_profile(user: User) -> MyProfileResponse:
     public_profile = to_public_profile(user)
@@ -173,8 +174,9 @@ def update_my_profile(
         "bio",
         "personality_summary",
         "profile_image_url",
+        "hobby",
+        "role",
     }
-
     profile_payload = {k: v for k, v in data.items() if k in profile_fields}
 
     if "display_name" in profile_payload and profile_payload["display_name"] is None:
