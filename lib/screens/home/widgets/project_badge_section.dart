@@ -35,7 +35,7 @@ class ProjectBadgeSection extends StatelessWidget {
               child: _ProjectBadgeCard(
                 imagePath: 'assets/images/hikhuong-nk.png',
                 projectName: '소프트웨어공학',
-                participation: '참여율 65%',
+                participation: '참여율 95%',
               ),
             ),
             SizedBox(width: 10),
