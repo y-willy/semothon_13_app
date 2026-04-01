@@ -3,9 +3,18 @@ import 'signup_screen.dart';
 import '../home/home_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../services/auth_service.dart';
+import '../services/project_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final AuthService authService;
+  final ProjectService projectService;
+
+  const LoginScreen({
+    super.key,
+    required this.authService,
+    required this.projectService,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -22,6 +31,9 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color inputFillColor = Color(0xFFF9F1F1);
   static const Color featureCardColor = Color(0xFFF7EFEF);
 
+  AuthService get _authService => widget.authService;
+  ProjectService get _projectService => widget.projectService;
+
   @override
   void dispose() {
     emailController.dispose();
@@ -29,37 +41,32 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
- void onLoginPressed() async {
-  final Uri loginUrl = Uri.parse(
-    'https://semothon13app-production.up.railway.app/auth/login',
-  );
+  Future<void> onLoginPressed() async {
+    final username = emailController.text.trim();
+    final password = passwordController.text.trim();
 
-  try {
-    final loginResponse = await http.post(
-      loginUrl,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        "username": emailController.text.trim(),
-        "password": passwordController.text.trim(),
-      }),
-    );
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('아이디와 비밀번호를 입력해주세요.')),
+      );
+      return;
+    }
 
-    final loginData = jsonDecode(loginResponse.body);
+    try {
+      final token = await _authService.login(
+        username: username,
+        password: password,
+      );
 
-    if (loginResponse.statusCode == 200) {
-      final token = loginData['access_token'];
+      _projectService.setAccessToken(token);
 
       String realName = '사용자';
 
       try {
-        final profileUrl = Uri.parse(
-          'https://semothon13app-production.up.railway.app/profile/me',
-        );
-
         final profileResponse = await http.get(
-          profileUrl,
+          Uri.parse(
+            'https://semothon13app-production.up.railway.app/profile/me',
+          ),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
@@ -67,21 +74,19 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         if (profileResponse.statusCode == 200) {
-          print(profileResponse.body);
           final profileData = jsonDecode(profileResponse.body);
 
           realName =
-              profileData['name'] ??
-              profileData['real_name'] ??
-              profileData['display_name'] ??
-              loginData['display_name'] ??
-              '사용자';
-        } else {
-          realName = loginData['display_name'] ?? '사용자';
+              profileData['name']?.toString() ??
+                  profileData['real_name']?.toString() ??
+                  profileData['display_name']?.toString() ??
+                  '사용자';
+
+          if (realName.trim().isEmpty) {
+            realName = '사용자';
+          }
         }
-      } catch (_) {
-        realName = loginData['display_name'] ?? '사용자';
-      }
+      } catch (_) {}
 
       if (!mounted) return;
 
@@ -90,31 +95,20 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(
           builder: (_) => HomeScreen(
             userName: realName,
-            token: token,
+            authService: _authService,
+            projectService: _projectService,
           ),
         ),
       );
-    } else {
+    } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            loginData['detail']?.toString() ??
-                loginData['message']?.toString() ??
-                '로그인 실패',
-          ),
-        ),
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
     }
-  } catch (e) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('서버 연결 실패: $e')),
-    );
   }
-}
+
   void onSignupPressed() {
     Navigator.push(
       context,
@@ -161,8 +155,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             Transform.translate(
                               offset: const Offset(0, -10),
-                              child: Column(
-                                children: const [
+                              child: const Column(
+                                children: [
                                   Text(
                                     '에코 (ai-coach)',
                                     textAlign: TextAlign.center,

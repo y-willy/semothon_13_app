@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/project_detail_model.dart';
 import '../services/project_service.dart';
+import '../services/auth_service.dart';
 import 'project_detail_screen.dart';
 import 'widgets/home_calendar_card.dart';
 import 'widgets/home_today_ai_card.dart';
@@ -12,9 +13,15 @@ import 'widgets/project_badge_section.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? userName;
-  final String? token;
+  final AuthService authService;
+  final ProjectService projectService;
 
-  const HomeScreen({super.key, this.userName, this.token});
+  const HomeScreen({
+    super.key,
+    this.userName,
+    required this.authService,
+    required this.projectService,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -35,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String displayName = '';
   late final ProjectService _projectService;
+  late final AuthService _authService;
 
   bool _isLoadingProjects = true;
   String? _projectLoadError;
@@ -42,30 +50,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
-  super.initState();
-  displayName = (widget.userName ?? '').trim();
+    super.initState();
+    displayName = (widget.userName ?? '').trim();
 
-
-    _projectService = ProjectService(
-      baseUrl: baseUrl,
-      accessToken: widget.token,
-    );
+    _projectService = widget.projectService;
+    _authService = widget.authService;
 
     _loadProfile();
     _loadProjects();
   }
 
   Future<void> _loadProfile() async {
-    final token = widget.token?.trim() ?? '';
-if (token.isEmpty) return;
+    final token = _projectService.accessToken?.trim() ?? '';
+    if (token.isEmpty) return;
 
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/profile/me'),
         headers: {
-    'Authorization': 'Bearer $token',
-    'Content-Type': 'application/json',
-  },
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
       );
 
       if (response.statusCode == 200) {
@@ -889,7 +894,9 @@ Widget _buildTopSection(BuildContext context) {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ProfileEditScreen(token: widget.token),
+                          builder: (_) => ProfileEditScreen(
+                            token: _projectService.accessToken,
+                          ),
                         ),
                       );
                       _loadProfile();
@@ -962,11 +969,21 @@ Widget _buildTopSection(BuildContext context) {
         top: 0,
         right: 0,
         child: OutlinedButton(
-          onPressed: () {
+          onPressed: () async {
+            await _authService.logout();
+            _projectService.clearAccessToken();
+
+            if (!mounted) return;
+
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
+              MaterialPageRoute(
+                builder: (_) => LoginScreen(
+                  authService: _authService,
+                  projectService: _projectService,
+                ),
+              ),
+                  (route) => false,
             );
           },
           style: OutlinedButton.styleFrom(
@@ -1093,7 +1110,9 @@ Widget _buildTodayTaskItem(String text) {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ProfileEditScreen(token: widget.token),
+               builder: (_) => ProfileEditScreen(
+                token: _projectService.accessToken,
+                ),
             ),
           );
           _loadProfile();
