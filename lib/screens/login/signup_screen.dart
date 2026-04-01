@@ -405,6 +405,7 @@ class _SignupScreenState extends State<SignupScreen> {
           barrierDismissible: false,
           barrierColor: Colors.black.withOpacity(0.35),
           builder: (context) => Dialog(
+            backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -422,7 +423,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(elevation: 0, backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                      child: const Text('확인', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                      child: const Text('로그인 하러가기', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ],
