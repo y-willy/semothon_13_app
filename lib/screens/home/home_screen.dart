@@ -912,7 +912,7 @@ Widget _buildTopSection(BuildContext context) {
                           ),
                           SizedBox(width: 5),
                           Text(
-                            '프로필 수정',
+                            '프로필 편집',
                             style: TextStyle(
                               color: Color(0xFF5F4747),
                               fontWeight: FontWeight.w700,
