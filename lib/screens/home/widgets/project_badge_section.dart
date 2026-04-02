@@ -12,17 +12,9 @@ class ProjectBadgeSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: const [
-        Text(
-          '내 프로젝트 현황',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: titleColor,
-          ),
-        ),
+        _SectionTitle(text: '내 프로젝트 현황'),
         SizedBox(height: 12),
-        // Added 'const' here to the Row
-        const Row(
+        Row(
           children: [
             Expanded(
               child: _ProjectBadgeCard(
@@ -54,7 +46,24 @@ class ProjectBadgeSection extends StatelessWidget {
   }
 }
 
-// Ensure the sub-widget has a const constructor (which yours already does)
+class _SectionTitle extends StatelessWidget {
+  final String text;
+
+  const _SectionTitle({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      ' $text',
+      style: const TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: ProjectBadgeSection.titleColor,
+      ),
+    );
+  }
+}
+
 class _ProjectBadgeCard extends StatelessWidget {
   final String imagePath;
   final String projectName;
@@ -96,7 +105,7 @@ class _ProjectBadgeCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: ProjectBadgeSection.titleColor,
             ),
             maxLines: 2,

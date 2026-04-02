@@ -148,39 +148,31 @@ class _LoginScreenState extends State<LoginScreen> {
                             Transform.translate(
                               offset: const Offset(0, 0),
                               child: Image.asset(
-                                'assets/images/mainlogo.png',
-                                width: 320,
+                                'assets/images/123.png',
+                                width: 240,
                                 fit: BoxFit.contain,
                               ),
                             ),
                             Transform.translate(
-                              offset: const Offset(0, -10),
-                              child: const Column(
-                                children: [
-                                  Text(
-                                    '에코 (ai-coach)',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: primaryColor,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w500,
-                                      letterSpacing: -0.3,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    '어색한 첫 만남부터 협업 완료까지\n팀플을 설계하는 AI 서비스',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: subtitleColor,
-                                      fontSize: 14,
-                                      height: 1.45,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+  offset: const Offset(0, -20),
+  child: const Column(
+    children: [
+      
+      SizedBox(height: 8),
+      Text(
+        '첫 만남의 어색함부터 프로젝트 완성까지\n팀플의 흐름을 함께 설계하는 AI 코치',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: Color(0xFF8A7A7A),
+          height: 1.5,
+          letterSpacing: -0.1,
+        ),
+      ),
+    ],
+  ),
+),
                           ],
                         ),
                         const SizedBox(height: 26),
@@ -342,66 +334,74 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 26),
                         Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                height: 72,
-                                decoration: BoxDecoration(
-                                  color: featureCardColor,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.auto_awesome_outlined,
-                                      color: primaryColor,
-                                      size: 24,
-                                    ),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      'AI 팀장 쿠옹',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Color(0xFF4B3A3A),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Container(
-                                height: 72,
-                                decoration: BoxDecoration(
-                                  color: featureCardColor,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.groups_2_outlined,
-                                      color: primaryColor,
-                                      size: 24,
-                                    ),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      '스마트 협업',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Color(0xFF4B3A3A),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+  children: [
+    Expanded(
+      child: Container(
+        height: 72,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFFD9D3D3),
+            width: 1,
+          ),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.auto_awesome_outlined,
+              color: primaryColor,
+              size: 24,
+            ),
+            SizedBox(height: 8),
+            Text(
+              'AI 팀장 쿠옹',
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xFF4B3A3A),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+    const SizedBox(width: 12),
+    Expanded(
+      child: Container(
+        height: 72,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFFD9D3D3),
+            width: 1,
+          ),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.groups_2_outlined,
+              color: primaryColor,
+              size: 24,
+            ),
+            SizedBox(height: 8),
+            Text(
+              '스마트 협업',
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xFF4B3A3A),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ],
+),
                       ],
                     ),
                   ),

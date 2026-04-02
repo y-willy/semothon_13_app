@@ -11,6 +11,8 @@ import 'widgets/home_calendar_card.dart';
 import 'widgets/home_today_ai_card.dart';
 import 'widgets/project_badge_section.dart';
 
+
+
 class HomeScreen extends StatefulWidget {
   final String? userName;
   final AuthService authService;
@@ -162,14 +164,16 @@ Future<void> _loadProjects() async {
       barrierColor: Colors.black.withOpacity(0.25),
       builder: (dialogContext) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+  backgroundColor: Colors.white,
+  surfaceTintColor: Colors.white,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(24),
+  ),
+  child: Padding(
+    padding: const EdgeInsets.all(22),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -310,10 +314,12 @@ Future<void> _loadProjects() async {
       barrierColor: Colors.black.withOpacity(0.25),
       builder: (dialogContext) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Padding(
+  backgroundColor: Colors.white,
+  surfaceTintColor: Colors.white,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(24),
+  ),
+  child: Padding(
             padding: const EdgeInsets.all(22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -750,15 +756,24 @@ Future<void> _loadProjects() async {
                   child: Column(
   crossAxisAlignment: CrossAxisAlignment.start,
   children: [
-    _buildTopSection(context),
-    const SizedBox(height: 22),
-    const ProjectBadgeSection(),
-    const SizedBox(height: 22),
-    const HomeTodayAiCard(),
-    const SizedBox(height: 18),
-    const HomeCalendarCard(),
-    const SizedBox(height: 18),
-    _buildActionButtons(context),
+   _buildTopSection(context),
+const SizedBox(height: 26),
+const Text(
+  ' 새 프로젝트 시작하기',
+  style: TextStyle(
+    fontSize: 22,
+    fontWeight: FontWeight.w600,
+    color: ProjectBadgeSection.titleColor,
+  ),
+),
+const SizedBox(height: 14),
+_buildActionButtons(context),
+const SizedBox(height: 26),
+const ProjectBadgeSection(),
+const SizedBox(height: 22),
+const HomeTodayAiCard(),
+const SizedBox(height: 18),
+const HomeCalendarCard(),
     const SizedBox(height: 24),
 if (_projectLoadError != null) ...[
   const SizedBox(height: 14),
@@ -785,10 +800,10 @@ if (_projectLoadError != null) ...[
 ],
 const SizedBox(height: 18),
 const Text(
-  '내 프로젝트 목록',
+  '  내 프로젝트 목록',
   style: TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w700,
+    fontSize: 21,
+    fontWeight: FontWeight.w900,
     color: Color(0xFF3A2A2A),
   ),
 ),
@@ -827,160 +842,193 @@ else
       ),
     );
   }
-
 Widget _buildTopSection(BuildContext context) {
-  return Stack(
-    children: [
-      Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Column(
-              children: [
-                Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFE0E0E0),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/face.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ProfileEditScreen(
-                            token: _projectService.accessToken,
-                          ),
-                        ),
-                      );
-                      _loadProfile();
-                    },
-                    child: Ink(
-                      width: 92,
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFFAFA),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: borderColor),
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFCFBFB),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: const Color(0xFFEAE1E1)),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x0D000000),
+          blurRadius: 10,
+          offset: Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFE0E0E0),
+                        width: 1.5,
                       ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.edit_outlined,
-                            size: 14,
-                            color: primaryColor,
-                          ),
-                          SizedBox(width: 5),
-                          Text(
-                            '프로필 편집',
-                            style: TextStyle(
-                              color: Color(0xFF5F4747),
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/face.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProfileEditScreen(
+                              token: _projectService.accessToken,
                             ),
                           ),
-                        ],
+                        );
+                        _loadProfile();
+                      },
+                      child: Ink(
+                        width: 92,
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFFAFA),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.edit_outlined,
+                              size: 14,
+                              color: primaryColor,
+                            ),
+                            SizedBox(width: 5),
+                            Text(
+                              '프로필 편집',
+                              style: TextStyle(
+                                color: Color(0xFF5F4747),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 6, right: 30),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${displayName.isEmpty ? "사용자" : displayName}님,\n환영합니다!',
-                      style: const TextStyle(
-                        color: Color(0xFF3A2A2A),
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        height: 1.22,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      '오늘도 팀플을 시작해볼까요?',
-                      style: TextStyle(
-                        color: subtitleColor,
-                        fontSize: 16,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 6, right: 30),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${displayName.isEmpty ? "사용자" : displayName}님,\n환영합니다!',
+                        style: const TextStyle(
+                          color: Color(0xFF3A2A2A),
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          height: 1.22,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+Text.rich(
+  TextSpan(
+    style: const TextStyle(
+      color: subtitleColor,
+      fontSize: 14,
+      height: 1.4,
+    ),
+    children: [
+      const TextSpan(text: '• 오늘 할 일 '),
+      const TextSpan(
+        text: '3개',
+        style: TextStyle(
+          color: primaryColor,
+          fontWeight: FontWeight.w700,
         ),
       ),
-      Positioned(
-        top: 0,
-        right: 0,
-        child: OutlinedButton(
-          onPressed: () async {
-            await _authService.logout();
-            _projectService.clearAccessToken();
-
-            if (!mounted) return;
-
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (_) => LoginScreen(
-                  authService: _authService,
-                  projectService: _projectService,
-                ),
-              ),
-                  (route) => false,
-            );
-          },
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: borderColor),
-            backgroundColor: const Color(0xFFFFFAFA),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          child: const Text(
-            '로그아웃',
-            style: TextStyle(
-              color: Color(0xFF5F4747),
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
+      const TextSpan(text: '\n• 마감임박 '),
+      const TextSpan(
+        text: '2개',
+        style: TextStyle(
+          color:Color(0xFF3E8E41),
+          fontWeight: FontWeight.w700,
         ),
       ),
     ],
+  ),
+),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: OutlinedButton(
+            onPressed: () async {
+              await _authService.logout();
+              _projectService.clearAccessToken();
+
+              if (!mounted) return;
+
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LoginScreen(
+                    authService: _authService,
+                    projectService: _projectService,
+                  ),
+                ),
+                (route) => false,
+              );
+            },
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: borderColor),
+              backgroundColor: const Color(0xFFFFFAFA),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              '로그아웃',
+              style: TextStyle(
+                color: Color(0xFF5F4747),
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 }
-
  
 Widget _buildTodayTaskItem(String text) {
   return Container(
@@ -1012,7 +1060,155 @@ Widget _buildTodayTaskItem(String text) {
     ),
   );
 }
-  Widget _buildActionButtons(BuildContext context) {
+  Future<void> _showJoinByCodeDialog() async {
+    final codeController = TextEditingController();
+    bool isJoining = false;
+
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.25),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '팀 코드로 참여하기',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF3A2A2A),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '팀장에게 받은 초대 코드를 입력하세요',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF7D6666),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _DialogField(
+                      controller: codeController,
+                      label: '초대 코드',
+                      hintText: '예: ABC123',
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                              side: const BorderSide(color: borderColor),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              '취소',
+                              style: TextStyle(
+                                color: Color(0xFF7D6666),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isJoining
+                                ? null
+                                : () async {
+                              final code = codeController.text.trim();
+                              if (code.isEmpty) return;
+
+                              setDialogState(() => isJoining = true);
+
+                              try {
+                                final token = _projectService.accessToken ?? '';
+                                final response = await http.post(
+                                  Uri.parse('$baseUrl/rooms/join-by-invite-code'),
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer $token',
+                                  },
+                                  body: jsonEncode({'invite_code': code}),
+                                );
+
+                                final data = jsonDecode(response.body);
+
+                                if (!mounted) return;
+
+                                if (response.statusCode == 200) {
+                                  Navigator.of(dialogContext).pop();
+                                  _showSnackBar(
+                                    '${data['title']} 팀에 참여했어요!',
+                                  );
+                                  _loadProjects();
+                                } else {
+                                  setDialogState(() => isJoining = false);
+                                  _showSnackBar(
+                                    data['detail']?.toString() ?? '참여에 실패했어요',
+                                  );
+                                }
+                              } catch (e) {
+                                if (!mounted) return;
+                                setDialogState(() => isJoining = false);
+                                _showSnackBar('서버 연결 실패: $e');
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              minimumSize: const Size.fromHeight(48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: isJoining
+                                ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                                : const Text(
+                              '참여하기',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+Widget _buildActionButtons(BuildContext context) {
   return Row(
     children: [
       Expanded(
@@ -1044,14 +1240,14 @@ Widget _buildTodayTaskItem(String text) {
         child: SizedBox(
           height: 56,
           child: OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: _showJoinByCodeDialog,
             icon: const Icon(
               Icons.groups_2_outlined,
               color: primaryColor,
               size: 18,
             ),
             label: const Text(
-              '팀 코드로 참여하기',
+              '팀 코드로 참여',
               style: TextStyle(
                 color: Color(0xFF4B3A3A),
                 fontSize: 15,
