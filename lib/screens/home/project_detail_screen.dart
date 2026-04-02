@@ -2465,23 +2465,48 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   Widget buildTabContent() {
     switch (selectedTabIndex) {
       case 0:
+      case 0:
         return RefreshIndicator(
           onRefresh: _reloadProject,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
-            child: _OverviewTab(
-              members: members,
-              schedules: schedules,
-              summaryStatus: summaryStatus,
-              urgentTaskCount: urgentTaskCount,
-              overdueTaskCount: overdueTaskCount,
-              onAddMember: showAddMemberSheet,
-              onAddSchedule: showAddScheduleSheet,
-              onEditMember: showEditMemberSheet,
-              onDeleteMember: deleteMember,
-              onEditSchedule: showEditScheduleSheet,
-              onDeleteSchedule: deleteSchedule,
+            child: Column(
+              children: [
+                if (project.inviteCode != null && project.inviteCode!.isNotEmpty)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F3F0),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFEBE2DE)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.vpn_key_outlined, size: 18, color: Color(0xFF7D6666)),
+                        const SizedBox(width: 10),
+                        const Text('초대 코드', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF7D6666))),
+                        const SizedBox(width: 8),
+                        Text(project.inviteCode!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF3A2A2A))),
+                      ],
+                    ),
+                  ),
+                _OverviewTab(
+                  members: members,
+                  schedules: schedules,
+                  summaryStatus: summaryStatus,
+                  urgentTaskCount: urgentTaskCount,
+                  overdueTaskCount: overdueTaskCount,
+                  onAddMember: showAddMemberSheet,
+                  onAddSchedule: showAddScheduleSheet,
+                  onEditMember: showEditMemberSheet,
+                  onDeleteMember: deleteMember,
+                  onEditSchedule: showEditScheduleSheet,
+                  onDeleteSchedule: deleteSchedule,
+                ),
+              ],
             ),
           ),
         );

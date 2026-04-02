@@ -13,6 +13,7 @@ class ProjectDetailModel {
   final List<RoleModel> roles;
   final List<ChatMessageModel> chatMessages;
   final List<AppNotificationModel> notifications;
+  final String? inviteCode;
   final bool isMock;
 
   const ProjectDetailModel({
@@ -24,6 +25,7 @@ class ProjectDetailModel {
     required this.roles,
     required this.chatMessages,
     required this.notifications,
+    this.inviteCode,
     this.isMock = false,
   });
 
@@ -65,6 +67,7 @@ class ProjectDetailModel {
             ),
           )
           .toList(),
+      inviteCode: _toString(json['inviteCode'] ?? json['invite_code'] ?? ''),
       isMock: json['isMock'] == true,
     );
   }
@@ -72,6 +75,7 @@ class ProjectDetailModel {
   ProjectDetailModel copyWith({
     String? projectNumber,
     String? projectTitle,
+    String? inviteCode,
     String? projectGoal,
     List<MemberModel>? members,
     List<ScheduleModel>? schedules,
@@ -89,6 +93,7 @@ class ProjectDetailModel {
       roles: roles ?? this.roles,
       chatMessages: chatMessages ?? this.chatMessages,
       notifications: notifications ?? this.notifications,
+      inviteCode: inviteCode ?? this.inviteCode,
       isMock: isMock ?? this.isMock,
     );
   }
