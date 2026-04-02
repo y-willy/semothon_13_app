@@ -72,6 +72,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 },
                 body: jsonEncode({
                   'display_name': nameController.text.trim(),
+                  'major': majorController.text.trim(),
                 }),
               );
             }
