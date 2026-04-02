@@ -64,7 +64,10 @@ class ProjectService {
         'projectNumber': (map['id'] ?? '').toString(),
         'projectTitle': map['title'] ?? '',
         'projectGoal': map['description'] ?? '프로젝트 목표를 입력하세요.',
-        'members': const [],
+        'members': List.generate(
+          (map['member_count'] as int?) ?? 0,
+              (i) => {'id': i, 'name': '멤버${i + 1}', 'studentId': ''},
+        ),
         'schedules': const [],
         'roles': const [],
         'chatMessages': const [],
