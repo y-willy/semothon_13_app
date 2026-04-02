@@ -466,6 +466,32 @@ def recommend_topics(request: schemas.TopicRecommendRequest, db: Session = Depen
             detail=f"AI 응답 파싱 실패. 원본 응답: {raw_text[:300]}"
         )
 
+    # 9. DB 저장 (방식 A: 추천된 3가지 주제 리스트를 모두 저장)
+    try:
+        # 기존의 활성화된 주제 추천 컨텍스트 비활성화
+        db.query(AIContext).filter(
+            AIContext.room_id == request.room_id,
+            AIContext.context_type == "topic_recommendation",
+            AIContext.is_active == True
+        ).update({"is_active": False}, synchronize_session=False)
+
+        new_ai_context = AIContext(
+            room_id=request.room_id,
+            context_type="topic_recommendation",
+            title=f"{request.subject} 주제 추천 결과",
+            context_json={"topics": topics_data},  # 3가지 추천 주제 리스트 저장
+            summary_text=f"'{request.subject}' 과목에 대해 {len(topics_data)}가지 프로젝트 주제를 추천함.",
+            is_active=True,
+            version=1
+        )
+        db.add(new_ai_context)
+        db.commit()
+        db.refresh(new_ai_context)
+    except Exception as e:
+        db.rollback()
+        # 저장 실패가 전체 로직에 영향을 주지는 않되, 로그는 남김 (추후 개선 가능)
+        print(f"주제 추천 결과 저장 중 오류 발생: {str(e)}")
+
     return schemas.TopicRecommendResponse(success=True, topics=topics)
 
 
@@ -781,6 +807,7 @@ def chat_with_bot(request: schemas.ChatMessageRequest, db: Session = Depends(get
     [Phase 4] 팀 통합 데이터베이스 AI Q&A API
     해당 룸(방)에 존재하는 과거 채팅 트래킹 포함
     """
+    
     if not client:
          raise HTTPException(status_code=500, detail="API Key is not configured")
          
