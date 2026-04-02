@@ -9,7 +9,6 @@ class ProjectService {
   final String baseUrl;
   final http.Client client;
 
-
   String? _accessToken;
 
   String? get accessToken => _accessToken;
@@ -218,6 +217,36 @@ class ProjectService {
     );
 
     _throwIfFailed(response, '일정 삭제 실패', allow204: true);
+  }
+
+  Future<void> createRole({
+    required String projectNumber,
+    required String title,
+    required int assigneeId,
+  }) async {
+    throw UnsupportedError(
+      '현재 백엔드 명세에는 역할 생성 API가 없습니다.',
+    );
+  }
+
+  Future<void> updateRole({
+    required String projectNumber,
+    required int roleId,
+    required String title,
+    required int assigneeId,
+  }) async {
+    throw UnsupportedError(
+      '현재 백엔드 명세에는 역할 수정 API가 없습니다.',
+    );
+  }
+
+  Future<void> deleteRole({
+    required String projectNumber,
+    required int roleId,
+  }) async {
+    throw UnsupportedError(
+      '현재 백엔드 명세에는 역할 삭제 API가 없습니다.',
+    );
   }
 
   Future<void> createTask({
