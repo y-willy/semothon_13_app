@@ -2493,6 +2493,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
             child: _RolesTab(
               roles: roles,
+              members: members, // 👈 추가
               expandedRoleIndex: expandedRoleIndex,
               onRoleTap: (index) {
                 setState(() {
@@ -3075,6 +3076,7 @@ class _OverviewTab extends StatelessWidget {
 
 class _RolesTab extends StatelessWidget {
   final List<RoleModel> roles;
+  final List<MemberModel> members;
   final int? expandedRoleIndex;
   final void Function(int) onRoleTap;
   final VoidCallback onAddRole;
@@ -3091,6 +3093,7 @@ class _RolesTab extends StatelessWidget {
 
   const _RolesTab({
     required this.roles,
+    required this.members,
     required this.expandedRoleIndex,
     required this.onRoleTap,
     required this.onAddRole,
@@ -3156,8 +3159,20 @@ class _RolesTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        ...List.generate(roles.length, (index) {
-          final role = roles[index];
+        ...List.generate(members.length, (index) {
+          final member = members[index];
+
+          // 👇 해당 멤버의 role 찾기
+          final role = roles.where((r) => r.assignee == member.name).isNotEmpty
+              ? roles.firstWhere((r) => r.assignee == member.name)
+              : RoleModel(
+                  id: -1,
+                  title: '역할 미정',
+                  assignee: member.name,
+                  status: '시작 전',
+                  tasks: [],
+                );
+
           final expanded = expandedRoleIndex == index;
 
           return Padding(
@@ -3184,60 +3199,91 @@ class _RolesTab extends StatelessWidget {
                     child: Column(
                       children: [
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              child: Text(
-                                role.title,
-                                style: const TextStyle(
-                                  color: _ProjectDetailScreenState.kText,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Wrap(
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    spacing: 8,
+                                    runSpacing: 6,
+                                    children: [
+                                      Text(
+                                        role.title,
+                                        style: const TextStyle(
+                                          color:
+                                              _ProjectDetailScreenState.kText,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 5,
+                                        height: 5,
+                                        decoration: const BoxDecoration(
+                                          color: _ProjectDetailScreenState.kSub,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      Text(
+                                        role.assignee,
+                                        style: const TextStyle(
+                                          color: _ProjectDetailScreenState.kSub,
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    role.title == '역할 미정'
+                                        ? '아직 역할이 정해지지 않았어요'
+                                        : '${role.assignee} 담당 역할',
+                                    style: const TextStyle(
+                                      color: _ProjectDetailScreenState.kSub,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Row(
-                              children: [
-                                Icon(
-                                  role.status == '지연'
-                                      ? Icons.error_outline
-                                      : Icons.schedule_outlined,
-                                  size: 18,
-                                  color: statusColor(role.status),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  role.status,
-                                  style: TextStyle(
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color:
+                                    statusColor(role.status).withOpacity(0.10),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    role.status == '지연'
+                                        ? Icons.error_outline
+                                        : Icons.schedule_outlined,
+                                    size: 16,
                                     color: statusColor(role.status),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    role.status,
+                                    style: TextStyle(
+                                      color: statusColor(role.status),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 10),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF8F3F0),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Text(
-                              '${role.assignee}의 업무',
-                              style: const TextStyle(
-                                color: _ProjectDetailScreenState.kText,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -3300,7 +3346,9 @@ class _RolesTab extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          '${role.assignee}의 업무 리스트',
+                          role.title == '역할 미정'
+                              ? '${role.assignee}의 예정 업무'
+                              : '${role.assignee}의 업무 리스트',
                           style: const TextStyle(
                             color: _ProjectDetailScreenState.kText,
                             fontSize: 18,
