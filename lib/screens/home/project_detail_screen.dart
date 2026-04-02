@@ -1195,6 +1195,285 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     }
   }
 
+  Future<void> _createRoleSmart({
+    required String title,
+    required String? selectedMemberName,
+    required String inputMemberName,
+  }) async {
+    try {
+      int memberId;
+      String assigneeName;
+
+      if (selectedMemberName != null && selectedMemberName.isNotEmpty) {
+        final selectedMember = members.firstWhere(
+          (m) => m.name == selectedMemberName,
+        );
+        memberId = selectedMember.id;
+        assigneeName = selectedMember.name;
+      } else {
+        final typedName = inputMemberName.trim();
+        if (typedName.isEmpty) {
+          _showErrorSnackBar('팀원을 선택하거나 새 팀원 이름을 입력해주세요.');
+          return;
+        }
+
+        final existingMembers =
+            members.where((m) => m.name == typedName).toList();
+
+        if (existingMembers.isNotEmpty) {
+          memberId = existingMembers.first.id;
+          assigneeName = existingMembers.first.name;
+        } else {
+          try {
+            await widget.service.createMember(
+              projectNumber: project.projectNumber,
+              name: typedName,
+              studentId: '',
+            );
+            await _reloadProject();
+
+            final createdMember = project.members.firstWhere(
+              (m) => m.name == typedName,
+            );
+            memberId = createdMember.id;
+            assigneeName = createdMember.name;
+          } on UnsupportedError {
+            final newMember = MemberModel(
+              id: _nextMemberId(),
+              name: typedName,
+              studentId: '',
+            );
+
+            setState(() {
+              project = project.copyWith(
+                members: [...members, newMember],
+              );
+            });
+
+            memberId = newMember.id;
+            assigneeName = newMember.name;
+          }
+        }
+      }
+
+      try {
+        await widget.service.createRole(
+          projectNumber: project.projectNumber,
+          title: title,
+          assigneeId: memberId,
+        );
+        await _reloadProject();
+      } on UnsupportedError {
+        final newRole = RoleModel(
+          id: _maxBy(roles, (item) => item.id) + 1,
+          title: title,
+          assignee: assigneeName,
+          status: '시작 전',
+          tasks: [],
+        );
+
+        setState(() {
+          project = project.copyWith(
+            roles: [...roles, newRole],
+          );
+          _refreshAllRoleStatuses();
+        });
+      }
+
+      _showSuccessSnackBar('역할을 추가했어요.');
+    } catch (e) {
+      _showErrorSnackBar('역할 추가에 실패했어요.');
+    }
+  }
+
+  Future<void> showAddRoleSmartSheet() async {
+    final titleController = TextEditingController();
+    final memberInputController = TextEditingController();
+    String? selectedMemberName;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setInnerState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const _SheetHandle(),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            '역할 추가',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: kText,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _DialogField(
+                      controller: titleController,
+                      label: '역할 이름',
+                      hintText: '예: 발표자, 자료조사, 디자인',
+                    ),
+                    const SizedBox(height: 14),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '기존 팀원 선택',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: kSub,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: selectedMemberName,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFFEFCFA),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 15,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFEDE5E1),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: kWine,
+                            width: 1.2,
+                          ),
+                        ),
+                      ),
+                      hint: const Text('팀원을 선택하세요'),
+                      items: members.map((member) {
+                        return DropdownMenuItem<String>(
+                          value: member.name,
+                          child: Text(member.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setInnerState(() {
+                          selectedMemberName = value;
+                          if (value != null) {
+                            memberInputController.clear();
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    _DialogField(
+                      controller: memberInputController,
+                      label: '또는 새 팀원 이름 입력',
+                      hintText: '기존 팀원에 없으면 직접 입력',
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(52),
+                              side: const BorderSide(color: Color(0xFFE4D9D4)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              '취소',
+                              style: TextStyle(
+                                color: kSub,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final title = titleController.text.trim();
+                              final inputMemberName =
+                                  memberInputController.text.trim();
+
+                              if (title.isEmpty) {
+                                _showErrorSnackBar('역할 이름을 입력해주세요.');
+                                return;
+                              }
+
+                              if ((selectedMemberName == null ||
+                                      selectedMemberName!.isEmpty) &&
+                                  inputMemberName.isEmpty) {
+                                _showErrorSnackBar(
+                                  '팀원을 선택하거나 새 팀원 이름을 입력해주세요.',
+                                );
+                                return;
+                              }
+
+                              Navigator.pop(context);
+
+                              await _createRoleSmart(
+                                title: title,
+                                selectedMemberName: selectedMemberName,
+                                inputMemberName: inputMemberName,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kWine,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              minimumSize: const Size.fromHeight(52),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              '추가',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> showAddTaskDialog(int roleIndex) async {
     final titleController = TextEditingController();
     DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
@@ -2140,6 +2419,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   expandedRoleIndex = expandedRoleIndex == index ? null : index;
                 });
               },
+              onAddRole: showAddRoleSmartSheet,
               onTaskToggle: toggleTask,
               onAddTask: showAddTaskDialog,
               onEditDeadline: showEditTaskDeadlineDialog,
@@ -2362,15 +2642,20 @@ class _HeaderSection extends StatelessWidget {
                           right: -2,
                           top: -2,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 1),
+                            constraints: const BoxConstraints(
+                                minWidth: 16, minHeight: 16),
                             decoration: BoxDecoration(
                               color: _ProjectDetailScreenState.kWine,
                               borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: Colors.white, width: 1.2),
+                              border:
+                                  Border.all(color: Colors.white, width: 1.2),
                             ),
                             child: Text(
-                              unreadNotificationCount > 9 ? '9+' : '$unreadNotificationCount',
+                              unreadNotificationCount > 9
+                                  ? '9+'
+                                  : '$unreadNotificationCount',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Colors.white,
@@ -2411,7 +2696,8 @@ class _HeaderSection extends StatelessWidget {
                 GestureDetector(
                   onTap: onStatusTap,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFF2F1),
                       borderRadius: BorderRadius.circular(14),
@@ -2483,85 +2769,90 @@ class _TopTabBar extends StatelessWidget {
           ],
         ),
         child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: List.generate(tabs.length, (index) {
-          final selected = selectedIndex == index;
-          final item = tabs[index];
-          final isChatTab = index == 2;
+            final selected = selectedIndex == index;
+            final item = tabs[index];
+            final isChatTab = index == 2;
 
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
-                decoration: BoxDecoration(
-                  color: selected ? _ProjectDetailScreenState.kWine : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: selected
-                      ? Border.all(color: _ProjectDetailScreenState.kWine)
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => onChanged(index),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? _ProjectDetailScreenState.kWine
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: selected
+                        ? Border.all(color: _ProjectDetailScreenState.kWine)
+                        : null,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        item.$1,
-                        size: 18,
-                        color: selected
-                            ? Colors.white
-                            : _ProjectDetailScreenState.kSub,
-                      ),
-                      if (isChatTab && unreadChatCount > 0)
-                        Positioned(
-                          right: -10,
-                          top: -8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 1,
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _ProjectDetailScreenState.kWine,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              unreadChatCount > 9 ? '9+' : '$unreadChatCount',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            item.$1,
+                            size: 18,
+                            color: selected
+                                ? Colors.white
+                                : _ProjectDetailScreenState.kSub,
+                          ),
+                          if (isChatTab && unreadChatCount > 0)
+                            Positioned(
+                              right: -10,
+                              top: -8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 16,
+                                  minHeight: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _ProjectDetailScreenState.kWine,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  unreadChatCount > 9
+                                      ? '9+'
+                                      : '$unreadChatCount',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        item.$2,
+                        style: TextStyle(
+                          color: selected
+                              ? Colors.white
+                              : _ProjectDetailScreenState.kSub,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
                         ),
+                      ),
                     ],
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    item.$2,
-                    style: TextStyle(
-                      color: selected
-                          ? Colors.white
-                          : _ProjectDetailScreenState.kSub,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
                 ),
               ),
-            ),
-          );
+            );
           }),
         ),
       ),
@@ -2706,6 +2997,7 @@ class _RolesTab extends StatelessWidget {
   final List<RoleModel> roles;
   final int? expandedRoleIndex;
   final void Function(int) onRoleTap;
+  final VoidCallback onAddRole;
   final Future<void> Function(int, int) onTaskToggle;
   final Future<void> Function(int) onAddTask;
   final Future<void> Function(int, int) onEditDeadline;
@@ -2721,6 +3013,7 @@ class _RolesTab extends StatelessWidget {
     required this.roles,
     required this.expandedRoleIndex,
     required this.onRoleTap,
+    required this.onAddRole,
     required this.onTaskToggle,
     required this.onAddTask,
     required this.onEditDeadline,
@@ -2738,13 +3031,40 @@ class _RolesTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '역할 분담',
-          style: TextStyle(
-            color: _ProjectDetailScreenState.kText,
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-          ),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                '역할 분담',
+                style: TextStyle(
+                  color: _ProjectDetailScreenState.kText,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            InkWell(
+              onTap: onAddRole,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F4F1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFECE3DF)),
+                ),
+                child: const Text(
+                  '+ 역할 추가',
+                  style: TextStyle(
+                    color: _ProjectDetailScreenState.kText,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 6),
         const Text(
