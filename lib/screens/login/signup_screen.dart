@@ -50,6 +50,33 @@ class _SignupScreenState extends State<SignupScreen> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (!mounted) return;
+        // 자동 로그인 → display_name 업데이트
+        try {
+          final loginRes = await http.post(
+            Uri.parse('https://semothon13app-production.up.railway.app/auth/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              "username": emailController.text.trim(),
+              "password": passwordController.text.trim(),
+            }),
+          );
+          if (loginRes.statusCode == 200) {
+            final loginData = jsonDecode(loginRes.body);
+            final token = loginData['access_token'];
+            if (token != null) {
+              await http.patch(
+                Uri.parse('https://semothon13app-production.up.railway.app/profile/me'),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer $token',
+                },
+                body: jsonEncode({
+                  'display_name': nameController.text.trim(),
+                }),
+              );
+            }
+          }
+        } catch (_) {}
         await showDialog(
           context: context,
           barrierDismissible: false,
