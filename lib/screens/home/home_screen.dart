@@ -162,14 +162,16 @@ Future<void> _loadProjects() async {
       barrierColor: Colors.black.withOpacity(0.25),
       builder: (dialogContext) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+  backgroundColor: Colors.white,
+  surfaceTintColor: Colors.white,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(24),
+  ),
+  child: Padding(
+    padding: const EdgeInsets.all(22),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -310,10 +312,12 @@ Future<void> _loadProjects() async {
       barrierColor: Colors.black.withOpacity(0.25),
       builder: (dialogContext) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Padding(
+  backgroundColor: Colors.white,
+  surfaceTintColor: Colors.white,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(24),
+  ),
+  child: Padding(
             padding: const EdgeInsets.all(22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -751,14 +755,14 @@ Future<void> _loadProjects() async {
   crossAxisAlignment: CrossAxisAlignment.start,
   children: [
     _buildTopSection(context),
-    const SizedBox(height: 22),
-    const ProjectBadgeSection(),
-    const SizedBox(height: 22),
-    const HomeTodayAiCard(),
-    const SizedBox(height: 18),
-    const HomeCalendarCard(),
-    const SizedBox(height: 18),
-    _buildActionButtons(context),
+const SizedBox(height: 22),
+_buildActionButtons(context),
+const SizedBox(height: 18),
+const ProjectBadgeSection(),
+const SizedBox(height: 22),
+const HomeTodayAiCard(),
+const SizedBox(height: 18),
+const HomeCalendarCard(),
     const SizedBox(height: 24),
 if (_projectLoadError != null) ...[
   const SizedBox(height: 14),
@@ -785,10 +789,10 @@ if (_projectLoadError != null) ...[
 ],
 const SizedBox(height: 18),
 const Text(
-  '내 프로젝트 목록',
+  '  내 프로젝트 목록',
   style: TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w700,
+    fontSize: 21,
+    fontWeight: FontWeight.w900,
     color: Color(0xFF3A2A2A),
   ),
 ),
@@ -963,7 +967,7 @@ Widget _buildTopSection(BuildContext context) {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
@@ -1051,7 +1055,7 @@ Widget _buildTodayTaskItem(String text) {
               size: 18,
             ),
             label: const Text(
-              '팀 코드로 참여하기',
+              '팀 코드로 참여',
               style: TextStyle(
                 color: Color(0xFF4B3A3A),
                 fontSize: 15,
