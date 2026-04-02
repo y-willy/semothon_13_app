@@ -1060,7 +1060,155 @@ Widget _buildTodayTaskItem(String text) {
     ),
   );
 }
-  Widget _buildActionButtons(BuildContext context) {
+  Future<void> _showJoinByCodeDialog() async {
+    final codeController = TextEditingController();
+    bool isJoining = false;
+
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.25),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '팀 코드로 참여하기',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF3A2A2A),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '팀장에게 받은 초대 코드를 입력하세요',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF7D6666),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _DialogField(
+                      controller: codeController,
+                      label: '초대 코드',
+                      hintText: '예: ABC123',
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                              side: const BorderSide(color: borderColor),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              '취소',
+                              style: TextStyle(
+                                color: Color(0xFF7D6666),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isJoining
+                                ? null
+                                : () async {
+                              final code = codeController.text.trim();
+                              if (code.isEmpty) return;
+
+                              setDialogState(() => isJoining = true);
+
+                              try {
+                                final token = _projectService.accessToken ?? '';
+                                final response = await http.post(
+                                  Uri.parse('$baseUrl/rooms/join-by-invite-code'),
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer $token',
+                                  },
+                                  body: jsonEncode({'invite_code': code}),
+                                );
+
+                                final data = jsonDecode(response.body);
+
+                                if (!mounted) return;
+
+                                if (response.statusCode == 200) {
+                                  Navigator.of(dialogContext).pop();
+                                  _showSnackBar(
+                                    '${data['title']} 팀에 참여했어요!',
+                                  );
+                                  _loadProjects();
+                                } else {
+                                  setDialogState(() => isJoining = false);
+                                  _showSnackBar(
+                                    data['detail']?.toString() ?? '참여에 실패했어요',
+                                  );
+                                }
+                              } catch (e) {
+                                if (!mounted) return;
+                                setDialogState(() => isJoining = false);
+                                _showSnackBar('서버 연결 실패: $e');
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              minimumSize: const Size.fromHeight(48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: isJoining
+                                ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                                : const Text(
+                              '참여하기',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+Widget _buildActionButtons(BuildContext context) {
   return Row(
     children: [
       Expanded(
@@ -1092,7 +1240,7 @@ Widget _buildTodayTaskItem(String text) {
         child: SizedBox(
           height: 56,
           child: OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: _showJoinByCodeDialog,
             icon: const Icon(
               Icons.groups_2_outlined,
               color: primaryColor,
