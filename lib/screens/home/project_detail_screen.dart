@@ -1,5 +1,9 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../models/app_notification_model.dart';
 import '../models/chat_message_model.dart';
@@ -56,6 +60,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   final TextEditingController chatController = TextEditingController();
   final ScrollController chatScrollController = ScrollController();
   final FocusNode chatFocusNode = FocusNode();
+
+  final ImagePicker _imagePicker = ImagePicker();
 
   bool _isLoading = false;
   bool _isSendingChat = false;
@@ -1881,6 +1887,86 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     ];
   }
 
+  Future<bool> _requestCameraPermission() async {
+    final status = await Permission.camera.request();
+    return status.isGranted;
+  }
+
+  Future<bool> _requestPhotosPermission() async {
+    if (Platform.isIOS) {
+      final status = await Permission.photos.request();
+      return status.isGranted || status.isLimited;
+    }
+    return true;
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final hasPermission = await _requestPhotosPermission();
+      if (!hasPermission) {
+        _showErrorSnackBar('사진 접근 권한이 필요해요.');
+        return;
+      }
+
+      final XFile? picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+
+      if (picked == null) return;
+
+      final fileName =
+          picked.name.isNotEmpty ? picked.name : picked.path.split('/').last;
+
+      await _sendAttachmentMessage('$fileName\n사진을 업로드했습니다.');
+    } catch (e) {
+      _showErrorSnackBar('사진 보관함에서 파일을 불러오지 못했어요.');
+    }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    try {
+      final hasPermission = await _requestCameraPermission();
+      if (!hasPermission) {
+        _showErrorSnackBar('카메라 권한이 필요해요.');
+        return;
+      }
+
+      final XFile? picked = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+
+      if (picked == null) return;
+
+      final fileName =
+          picked.name.isNotEmpty ? picked.name : picked.path.split('/').last;
+
+      await _sendAttachmentMessage('$fileName\n사진을 촬영해 업로드했습니다.');
+    } catch (e) {
+      _showErrorSnackBar('카메라 촬영에 실패했어요.');
+    }
+  }
+
+  Future<void> _pickFileFromDevice() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: false,
+        withData: false,
+        type: FileType.any,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.single;
+      final fileName = file.name;
+
+      await _sendAttachmentMessage('$fileName\n파일을 업로드했습니다.');
+    } catch (e) {
+      _showErrorSnackBar('파일을 불러오지 못했어요.');
+    }
+  }
+
   void showAttachmentOptions() {
     showModalBottomSheet(
       context: context,
@@ -1921,9 +2007,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 title: '사진 보관함',
                 onTap: () async {
                   Navigator.pop(context);
-                  await _sendAttachmentMessage(
-                    'progress_photo.jpg\n사진을 업로드했습니다.',
-                  );
+                  await _pickImageFromGallery();
                 },
               ),
               _AttachOptionTile(
@@ -1931,9 +2015,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 title: '카메라',
                 onTap: () async {
                   Navigator.pop(context);
-                  await _sendAttachmentMessage(
-                    'captured_image.jpg\n사진을 촬영해 업로드했습니다.',
-                  );
+                  await _pickImageFromCamera();
                 },
               ),
               _AttachOptionTile(
@@ -1941,9 +2023,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 title: '파일',
                 onTap: () async {
                   Navigator.pop(context);
-                  await _sendAttachmentMessage(
-                    'project_note.pdf\n파일을 업로드했습니다.',
-                  );
+                  await _pickFileFromDevice();
                 },
               ),
               _AttachOptionTile(
