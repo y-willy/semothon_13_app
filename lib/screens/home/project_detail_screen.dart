@@ -580,6 +580,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         isFile: true,
       );
       await _reloadProject();
+      _loadMessages();
       _scrollChatToBottom();
     } on UnsupportedError {
       final updated = [
