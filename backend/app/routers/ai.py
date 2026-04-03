@@ -751,30 +751,6 @@ def distribute_tasks(
         db.flush()
         db.commit()
 
-    except IntegrityError as e:
-        db.rollback()
-        logger.error("DB 무결성 오류: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=400, detail="데이터 저장 중 무결성 오류가 발생했습니다."
-        )
-    except Exception as e:
-        db.rollback()
-        logger.error("DB 저장 실패: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail="데이터 저장에 실패했습니다.")
-
-    # 7) 응답 반환
-    return schemas.TaskDistributeResponse(
-        success=True,
-        tasks=[
-            schemas.GeneratedTask(
-                title=obj.title,
-                description=obj.description or "",
-                assigned_user_id=obj.assigned_user_id,
-                reason=vt["reason"],
-            )
-            for obj, vt in zip(task_objects, validated_tasks)
-        ],
-    )
 
 def build_system_chat_prompt() -> str:
     return """
