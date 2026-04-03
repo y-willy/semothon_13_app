@@ -13,6 +13,12 @@ import '../models/role_model.dart';
 import '../models/schedule_model.dart';
 import '../models/task_model.dart';
 import '../services/project_service.dart';
+import 'icebreaking_stage_screen.dart';
+import 'topic_selection_stage_screen.dart';
+import 'role_assignment_stage_screen.dart';
+import 'collaboration_stage_screen.dart';
+
+
 
 String formatDate(DateTime date) {
   return '${date.month}월 ${date.day}일';
@@ -62,7 +68,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   final FocusNode chatFocusNode = FocusNode();
 
   final ImagePicker _imagePicker = ImagePicker();
-
+  
   bool _isLoading = false;
   bool _isSendingChat = false;
   String? _errorText;
@@ -79,7 +85,31 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       setState(() {});
     });
   }
+  void _openProjectStage(BuildContext context, int stageIndex) {
+  Widget screen;
 
+  switch (stageIndex) {
+    case 0:
+      screen = const IcebreakingStageScreen();
+      break;
+    case 1:
+      screen = const TopicSelectionStageScreen();
+      break;
+    case 2:
+      screen = const RoleAssignmentStageScreen();
+      break;
+    case 3:
+      screen = const CollaborationStageScreen();
+      break;
+    default:
+      return;
+  }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => screen),
+  );
+}
   @override
   void dispose() {
     chatController.dispose();
@@ -2465,7 +2495,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   Widget buildTabContent() {
     switch (selectedTabIndex) {
       case 0:
-      case 0:
         return RefreshIndicator(
           onRefresh: _reloadProject,
           child: SingleChildScrollView(
@@ -2505,6 +2534,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   onDeleteMember: deleteMember,
                   onEditSchedule: showEditScheduleSheet,
                   onDeleteSchedule: deleteSchedule,
+                  onOpenStage: (stageIndex) => _openProjectStage(context, stageIndex),
                 ),
               ],
             ),
@@ -2978,7 +3008,7 @@ class _OverviewTab extends StatelessWidget {
   final void Function(int index) onDeleteMember;
   final void Function(ScheduleModel schedule, int index) onEditSchedule;
   final void Function(int index) onDeleteSchedule;
-
+  final void Function(int stageIndex) onOpenStage;
   const _OverviewTab({
     required this.members,
     required this.schedules,
@@ -2991,6 +3021,7 @@ class _OverviewTab extends StatelessWidget {
     required this.onDeleteMember,
     required this.onEditSchedule,
     required this.onDeleteSchedule,
+    required this.onOpenStage,
   });
 
   @override
@@ -3094,6 +3125,57 @@ class _OverviewTab extends StatelessWidget {
             }),
           ),
         ),
+        const SizedBox(height: 16),
+_SectionCard(
+  title: '프로젝트 단계',
+  icon: Icons.auto_awesome_outlined,
+  buttonText: '보기',
+  onButtonTap: () => onOpenStage(0),
+  child: Column(
+    children: [
+      _ProjectStageTile(
+        title: '아이스브레이킹',
+        subtitle: '완료됨',
+        status: '완료됨',
+        statusColor: const Color(0xFF16C75A),
+        iconBgColor: const Color(0xFF16C75A),
+        icon: Icons.check_circle_outline_rounded,
+        onTap: () => onOpenStage(0),
+      ),
+      const SizedBox(height: 12),
+      _ProjectStageTile(
+        title: '주제선정',
+        subtitle: '완료됨',
+        status: '완료됨',
+        statusColor: const Color(0xFF16C75A),
+        iconBgColor: const Color(0xFF16C75A),
+        icon: Icons.check_circle_outline_rounded,
+        onTap: () => onOpenStage(1),
+      ),
+      const SizedBox(height: 12),
+      _ProjectStageTile(
+        title: '역할분배',
+        subtitle: '완료됨',
+        status: '완료됨',
+        statusColor: const Color(0xFF16C75A),
+        iconBgColor: const Color(0xFF16C75A),
+        icon: Icons.check_circle_outline_rounded,
+        onTap: () => onOpenStage(2),
+      ),
+      const SizedBox(height: 12),
+      _ProjectStageTile(
+        title: '협업진행',
+        subtitle: '진행중',
+        status: '계속하기',
+        statusColor: _ProjectDetailScreenState.kWine,
+        iconBgColor: const Color(0xFF3B82F6),
+        icon: Icons.access_time_rounded,
+        showActionButton: true,
+        onTap: () => onOpenStage(3),
+      ),
+    ],
+  ),
+),
       ],
     );
   }
@@ -3943,7 +4025,7 @@ class _AiCoachCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9F5FB),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFEEE6F4)),
         boxShadow: const [
@@ -4907,4 +4989,116 @@ class _UrgentTaskView {
     required this.dueDate,
     required this.isOverdue,
   });
+}
+class _ProjectStageTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String status;
+  final Color statusColor;
+  final Color iconBgColor;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool showActionButton;
+
+  const _ProjectStageTile({
+    required this.title,
+    required this.subtitle,
+    required this.status,
+    required this.statusColor,
+    required this.iconBgColor,
+    required this.icon,
+    required this.onTap,
+    this.showActionButton = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7FAF8),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFCDEBD5)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: _ProjectDetailScreenState.kText,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: _ProjectDetailScreenState.kSub,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (showActionButton)
+              ElevatedButton(
+                onPressed: onTap,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _ProjectDetailScreenState.kWine,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  status,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              )
+            else
+              Text(
+                status,
+                style: TextStyle(
+                  color: statusColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
