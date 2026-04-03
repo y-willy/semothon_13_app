@@ -322,7 +322,7 @@ def request_ice_breaking(
         ],
         temperature=0.2,
         top_p=1,
-        max_completion_tokens=280,
+        max_completion_tokens=200,
         response_format={"type": "json_object"},
     )
 
@@ -813,6 +813,7 @@ def distribute_tasks(
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.3,
+            max_completion_tokens=250, 
         )
         try:
             api_kwargs["response_format"] = {"type": "json_object"}
