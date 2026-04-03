@@ -37,6 +37,7 @@ class UserProfile(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     hobby = Column(String(255), nullable=True)
     role = Column(String(255), nullable=True)
+    distributed = Column(String(255), nullable=True)
     user = relationship("User", back_populates="profile")
 
 

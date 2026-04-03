@@ -764,6 +764,16 @@ def distribute_tasks(
         ]
 
         db.add_all(task_objects)
+        # 각 팀원이 배정받은 태스크의 title을 프로필에 기록합니다.
+        for t in validated_tasks:
+            user_profile = (
+                db.query(models.UserProfile)
+                .filter(models.UserProfile.user_id == t["assigned_user_id"])
+                .first()
+            )
+            if user_profile:
+                user_profile.distributed = t["title"]
+                
         db.flush()
         db.commit()
 
