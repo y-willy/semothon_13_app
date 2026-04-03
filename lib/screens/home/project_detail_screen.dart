@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 
 import '../models/app_notification_model.dart';
 import '../models/chat_message_model.dart';
@@ -15,6 +13,12 @@ import '../models/role_model.dart';
 import '../models/schedule_model.dart';
 import '../models/task_model.dart';
 import '../services/project_service.dart';
+import 'icebreaking_stage_screen.dart';
+import 'topic_selection_stage_screen.dart';
+import 'role_assignment_stage_screen.dart';
+import 'collaboration_stage_screen.dart';
+
+
 
 String formatDate(DateTime date) {
   return '${date.month}월 ${date.day}일';
@@ -64,7 +68,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   final FocusNode chatFocusNode = FocusNode();
 
   final ImagePicker _imagePicker = ImagePicker();
-
+  
   bool _isLoading = false;
   bool _isSendingChat = false;
   String? _errorText;
@@ -81,7 +85,31 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       setState(() {});
     });
   }
+  void _openProjectStage(BuildContext context, int stageIndex) {
+  Widget screen;
 
+  switch (stageIndex) {
+    case 0:
+      screen = const IcebreakingStageScreen();
+      break;
+    case 1:
+      screen = const TopicSelectionStageScreen();
+      break;
+    case 2:
+      screen = const RoleAssignmentStageScreen();
+      break;
+    case 3:
+      screen = const CollaborationStageScreen();
+      break;
+    default:
+      return;
+  }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => screen),
+  );
+}
   @override
   void dispose() {
     chatController.dispose();
@@ -551,128 +579,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     } catch (e) {
       _showErrorSnackBar('파일 공유에 실패했어요.');
     }
-  }
-
-  Future<void> showMemberProfileSheet(MemberModel member) async {
-    Map<String, dynamic>? profileData;
-    bool isLoading = true;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            // 프로필 불러오기
-            if (isLoading && profileData == null) {
-              final token = widget.service.accessToken ?? '';
-              http.get(
-                Uri.parse('https://semothon13app-production.up.railway.app/profile/${member.username}'),
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': 'Bearer $token',
-                },
-              ).then((response) {
-                if (response.statusCode == 200) {
-                  setSheetState(() {
-                    profileData = jsonDecode(response.body);
-                    isLoading = false;
-                  });
-                } else {
-                  setSheetState(() {
-                    isLoading = false;
-                  });
-                }
-              }).catchError((_) {
-                setSheetState(() {
-                  isLoading = false;
-                });
-              });
-            }
-
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.55,
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 42, height: 5,
-                    decoration: BoxDecoration(color: const Color(0xFFE5DAD7), borderRadius: BorderRadius.circular(99)),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Container(
-                        width: 50, height: 50,
-                        decoration: const BoxDecoration(color: Color(0xFFF3ECE8), shape: BoxShape.circle),
-                        alignment: Alignment.center,
-                        child: Text(member.name.isNotEmpty ? member.name[0] : '?', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF3A2A2A))),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(member.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF3A2A2A))),
-                            const SizedBox(height: 4),
-                            Text(member.studentId, style: const TextStyle(fontSize: 14, color: Color(0xFF7D6666))),
-                          ],
-                        ),
-                      ),
-                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  if (isLoading)
-                    const Expanded(child: Center(child: CircularProgressIndicator(color: Color(0xFFA31621))))
-                  else if (profileData != null)
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            _profileInfoTile('전공', profileData!['major']?.toString() ?? '미입력'),
-                            _profileInfoTile('MBTI', profileData!['mbti']?.toString() ?? '미입력'),
-                            _profileInfoTile('자기소개', profileData!['personality_summary']?.toString() ?? '미입력'),
-                            _profileInfoTile('취미', profileData!['hobby']?.toString() ?? '미입력'),
-                            _profileInfoTile('역할', profileData!['role']?.toString() ?? '미입력'),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    const Expanded(child: Center(child: Text('프로필을 불러올 수 없어요', style: TextStyle(color: Color(0xFF7D6666), fontSize: 15)))),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _profileInfoTile(String label, String value) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F3F0),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF7D6666))),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF3A2A2A))),
-        ],
-      ),
-    );
   }
 
   Future<void> showAddMemberSheet() async {
@@ -2589,7 +2495,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   Widget buildTabContent() {
     switch (selectedTabIndex) {
       case 0:
-      case 0:
         return RefreshIndicator(
           onRefresh: _reloadProject,
           child: SingleChildScrollView(
@@ -2629,7 +2534,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   onDeleteMember: deleteMember,
                   onEditSchedule: showEditScheduleSheet,
                   onDeleteSchedule: deleteSchedule,
-                  onTapMember: showMemberProfileSheet,
+                  onOpenStage: (stageIndex) => _openProjectStage(context, stageIndex),
                 ),
               ],
             ),
@@ -3103,8 +3008,7 @@ class _OverviewTab extends StatelessWidget {
   final void Function(int index) onDeleteMember;
   final void Function(ScheduleModel schedule, int index) onEditSchedule;
   final void Function(int index) onDeleteSchedule;
-  final void Function(MemberModel member)? onTapMember;
-
+  final void Function(int stageIndex) onOpenStage;
   const _OverviewTab({
     required this.members,
     required this.schedules,
@@ -3117,7 +3021,7 @@ class _OverviewTab extends StatelessWidget {
     required this.onDeleteMember,
     required this.onEditSchedule,
     required this.onDeleteSchedule,
-    this.onTapMember,
+    required this.onOpenStage,
   });
 
   @override
@@ -3164,15 +3068,12 @@ class _OverviewTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: GestureDetector(
-                    onTap: () => onTapMember?.call(member),
-                    child: _SimpleListTile(
-                      title: member.name,
-                      subtitle: member.studentId,
-                      leadingText: member.name.isNotEmpty
-                          ? member.name.characters.first
-                          : '?',
-                    ),
+                  child: _SimpleListTile(
+                    title: member.name,
+                    subtitle: member.studentId,
+                    leadingText: member.name.isNotEmpty
+                        ? member.name.characters.first
+                        : '?',
                   ),
                 ),
               );
@@ -3224,6 +3125,57 @@ class _OverviewTab extends StatelessWidget {
             }),
           ),
         ),
+        const SizedBox(height: 16),
+_SectionCard(
+  title: '프로젝트 단계',
+  icon: Icons.auto_awesome_outlined,
+  buttonText: '보기',
+  onButtonTap: () => onOpenStage(0),
+  child: Column(
+    children: [
+      _ProjectStageTile(
+        title: '아이스브레이킹',
+        subtitle: '완료됨',
+        status: '완료됨',
+        statusColor: const Color(0xFF16C75A),
+        iconBgColor: const Color(0xFF16C75A),
+        icon: Icons.check_circle_outline_rounded,
+        onTap: () => onOpenStage(0),
+      ),
+      const SizedBox(height: 12),
+      _ProjectStageTile(
+        title: '주제선정',
+        subtitle: '완료됨',
+        status: '완료됨',
+        statusColor: const Color(0xFF16C75A),
+        iconBgColor: const Color(0xFF16C75A),
+        icon: Icons.check_circle_outline_rounded,
+        onTap: () => onOpenStage(1),
+      ),
+      const SizedBox(height: 12),
+      _ProjectStageTile(
+        title: '역할분배',
+        subtitle: '완료됨',
+        status: '완료됨',
+        statusColor: const Color(0xFF16C75A),
+        iconBgColor: const Color(0xFF16C75A),
+        icon: Icons.check_circle_outline_rounded,
+        onTap: () => onOpenStage(2),
+      ),
+      const SizedBox(height: 12),
+      _ProjectStageTile(
+        title: '협업진행',
+        subtitle: '진행중',
+        status: '계속하기',
+        statusColor: _ProjectDetailScreenState.kWine,
+        iconBgColor: const Color(0xFF3B82F6),
+        icon: Icons.access_time_rounded,
+        showActionButton: true,
+        onTap: () => onOpenStage(3),
+      ),
+    ],
+  ),
+),
       ],
     );
   }
@@ -4073,7 +4025,7 @@ class _AiCoachCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9F5FB),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFEEE6F4)),
         boxShadow: const [
@@ -4087,29 +4039,41 @@ class _AiCoachCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: const Color(0xFFEEDDF8),
-                child: Icon(
-                  Icons.smart_toy_outlined,
-                  color: _ProjectDetailScreenState.kPurple,
-                  size: 18,
-                ),
-              ),
-              SizedBox(width: 10),
-              Text(
-                'AI 코치 분석',
-                style: TextStyle(
-                  color: Color(0xFF5A2B7A),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
+          Row(
+  children: [
+    Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFFE0E0E0),
+          width: 1.2,
+        ),
+      ),
+      child: ClipOval(
+        child: Padding(
+          padding: const EdgeInsets.all(3),
+          child: Image.asset(
+            'assets/images/happyface.png',
+            fit: BoxFit.cover,
           ),
-          const SizedBox(height: 14),
+        ),
+      ),
+    ),
+    const SizedBox(width: 10),
+    const Text(
+      'AI 쿠옹 코치 분석',
+      style: TextStyle(
+        color: Color(0xFF3A2A2A),
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+      ),
+    ),
+  ],
+),
+                const SizedBox(height: 14),
           _AiHintBox(
             backgroundColor: const Color(0xFFEFF4FF),
             textColor: _ProjectDetailScreenState.kBlue,
@@ -5025,4 +4989,116 @@ class _UrgentTaskView {
     required this.dueDate,
     required this.isOverdue,
   });
+}
+class _ProjectStageTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String status;
+  final Color statusColor;
+  final Color iconBgColor;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool showActionButton;
+
+  const _ProjectStageTile({
+    required this.title,
+    required this.subtitle,
+    required this.status,
+    required this.statusColor,
+    required this.iconBgColor,
+    required this.icon,
+    required this.onTap,
+    this.showActionButton = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7FAF8),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFCDEBD5)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: _ProjectDetailScreenState.kText,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: _ProjectDetailScreenState.kSub,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (showActionButton)
+              ElevatedButton(
+                onPressed: onTap,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _ProjectDetailScreenState.kWine,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  status,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              )
+            else
+              Text(
+                status,
+                style: TextStyle(
+                  color: statusColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
