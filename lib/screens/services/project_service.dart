@@ -101,6 +101,7 @@ class ProjectService {
       'roles': const [],
       'chatMessages': const [],
       'notifications': const [],
+      'inviteCode': data['invite_code'] ?? '',
       'isMock': false,
     });
   }
