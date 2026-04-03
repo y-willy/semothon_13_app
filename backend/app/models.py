@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, func, ForeignKey, Text, Enum, Integer, Time, JSON, Boolean
+from sqlalchemy import Column, String, DateTime, func, ForeignKey, Text, Enum, Integer, Time, JSON, Boolean, BigInteger,text
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT
 from app.database import Base
@@ -180,6 +180,6 @@ class ChatMessage(Base):
     content = Column(Text, nullable=True)
     image_url = Column(String(500), nullable=True)
     related_file_id = Column(BigInteger, ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    created_at = Column(DateTime,nullable=False,server_default=text("CURRENT_TIMESTAMP"))
 
     sender = relationship("User", foreign_keys=[sender_user_id])
