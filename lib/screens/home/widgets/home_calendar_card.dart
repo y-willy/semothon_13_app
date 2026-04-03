@@ -21,19 +21,55 @@ class _HomeCalendarCardState extends State<HomeCalendarCard> {
   DateTime _normalize(DateTime d) => DateTime(d.year, d.month, d.day);
 
   final Map<DateTime, List<CalendarEvent>> _events = {
-    DateTime(2026, 4, 1): const [
-      CalendarEvent('디자인적 사고 아이디어 회의 18:00', Color(0xFF90CAF9)),
-      CalendarEvent('캡스톤 디자인 발표 주제 정리', Color(0xFFFFCC80)),
-    ],
-    DateTime(2026, 4, 2): const [
-      CalendarEvent('소프트웨어 공학 자료조사 마감', Color(0xFFA5D6A7)),
-    ],
-    DateTime(2026, 4, 3): const [
-      CalendarEvent('세계와 시민 13조 중간 점검 회의 14:00', Color(0xFFB39DDB)),
-      CalendarEvent('PPT 초안 작성', Color(0xFFEF9A9A)),
-    ],
-  };
-
+  DateTime(2026, 4, 1): const [
+    CalendarEvent('[디자인적 사고] 아이디어 회의 18:00', Color(0xFF90CAF9)),
+    CalendarEvent('[캡스톤디자인] 발표 주제 정리', Color(0xFFFFCC80)),
+  ],
+  DateTime(2026, 4, 3): const [
+    CalendarEvent('[세계와 시민] 13조 중간 점검 회의 14:00', Color(0xFFB39DDB)),
+  ],
+  DateTime(2026, 4, 5): const [
+    CalendarEvent('[캡스톤디자인] 자료조사 정리', Color(0xFFFFAB91)),
+  ],
+  DateTime(2026, 4, 7): const [
+    CalendarEvent('[소프트웨어공학] 백엔드 API 연결 회의 19:00', Color(0xFFA5D6A7)),
+    CalendarEvent('[캡스톤디자인] 중간 발표 피드백 반영', Color(0xFFFFCC80)),
+  ],
+  DateTime(2026, 4, 9): const [
+    CalendarEvent('[소프트웨어공학] 로그인/회원가입 오류 점검', Color(0xFF90CAF9)),
+  ],
+  DateTime(2026, 4, 11): const [
+    CalendarEvent('[캡스톤디자인] 프로젝트 단계 화면 구성', Color(0xFFFFCC80)),
+  ],
+  DateTime(2026, 4, 13): const [
+    CalendarEvent('[디자인적 사고] 주제선정 결과 정리 회의 17:00', Color(0xFFCE93D8)),
+  ],
+  DateTime(2026, 4, 15): const [
+    CalendarEvent('[소프트웨어공학] 프로필 수정 기능 연결', Color(0xFFA5D6A7)),
+  ],
+  DateTime(2026, 4, 17): const [
+    CalendarEvent('[캡스톤디자인] 아이스브레이킹 질문 수정', Color(0xFFFFCC80)),
+  ],
+  DateTime(2026, 4, 19): const [
+    CalendarEvent('[소프트웨어공학] 캘린더 일정 더미데이터 보강', Color(0xFFB39DDB)),
+  ],
+  DateTime(2026, 4, 21): const [
+    CalendarEvent('[캡스톤디자인] PPT 디자인 통일 작업', Color(0xFFFFAB91)),
+    CalendarEvent('[캡스톤디자인] 앱 시연 흐름 점검', Color(0xFFF48FB1)),
+  ],
+  DateTime(2026, 4, 24): const [
+    CalendarEvent('[캡스톤디자인] 발표 리허설 18:30', Color(0xFFFFCC80)),
+  ],
+  DateTime(2026, 4, 25): const [
+    CalendarEvent('[캡스톤디자인] 시연 영상 촬영', Color(0xFFEF9A9A)),
+  ],
+  DateTime(2026, 4, 28): const [
+    CalendarEvent('[캡스톤디자인] 최종 발표 자료 제출', Color(0xFFEF9A9A)),
+  ],
+  DateTime(2026, 4, 30): const [
+    CalendarEvent('[캡스톤디자인] 프로젝트 회고록 작성', Color(0xFFF48FB1)),
+  ],
+};
   List<CalendarEvent> _getEventsForDay(DateTime day) {
     return _events[_normalize(day)] ?? const [];
   }
