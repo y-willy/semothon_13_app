@@ -2,11 +2,13 @@ class MemberModel {
   final int id;
   final String name;
   final String studentId;
+  final String username;
 
   const MemberModel({
     required this.id,
     required this.name,
     required this.studentId,
+    required this.username,
   });
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
