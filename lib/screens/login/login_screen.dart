@@ -61,6 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _projectService.setAccessToken(token);
 
       String realName = '사용자';
+      int userId = 0;
 
       try {
         final profileResponse = await http.get(
@@ -75,12 +76,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (profileResponse.statusCode == 200) {
           final profileData = jsonDecode(profileResponse.body);
-
+          _projectService.setCurrentUserId(profileData['id']);
           realName =
               profileData['name']?.toString() ??
                   profileData['real_name']?.toString() ??
                   profileData['display_name']?.toString() ??
                   '사용자';
+          userId = profileData['id'];
 
           if (realName.trim().isEmpty) {
             realName = '사용자';
@@ -94,6 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => HomeScreen(
+            userId: userId,
             userName: realName,
             authService: _authService,
             projectService: _projectService,

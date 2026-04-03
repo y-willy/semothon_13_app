@@ -15,11 +15,13 @@ import 'widgets/project_badge_section.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? userName;
+  final int? userId;
   final AuthService authService;
   final ProjectService projectService;
 
   const HomeScreen({
     super.key,
+    this.userId,
     this.userName,
     required this.authService,
     required this.projectService,
@@ -1071,10 +1073,12 @@ Widget _buildTodayTaskItem(String text) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Padding(
+  backgroundColor: Colors.white,
+  surfaceTintColor: Colors.white,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(24),
+  ),
+  child: Padding(
                 padding: const EdgeInsets.all(22),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

@@ -29,7 +29,7 @@ class ProjectDetailModel {
     this.isMock = false,
   });
 
-  factory ProjectDetailModel.fromJson(Map<String, dynamic> json) {
+  factory ProjectDetailModel.fromJson(Map<String, dynamic> json,int currentUserId) {
     return ProjectDetailModel(
       projectNumber: _toString(
         json['projectNumber'] ?? json['project_number'] ?? json['id'],
@@ -56,7 +56,7 @@ class ProjectDetailModel {
               [])
           .map(
             (e) => ChatMessageModel.fromJson(
-              Map<String, dynamic>.from(e as Map),
+              Map<String, dynamic>.from(e as Map),currentUserId
             ),
           )
           .toList(),
