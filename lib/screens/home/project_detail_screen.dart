@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import '../models/app_notification_model.dart';
 import '../models/chat_message_model.dart';
@@ -80,6 +82,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     _refreshAllRoleStatuses();
     _loadProjectDetail(showLoading: false);
 
+    _loadMessages();
+
     chatFocusNode.addListener(() {
       if (!mounted) return;
       setState(() {});
@@ -121,7 +125,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   List<MemberModel> get members => project.members;
   List<ScheduleModel> get schedules => project.schedules;
   List<RoleModel> get roles => project.roles;
-  List<ChatMessageModel> get chatMessages => project.chatMessages;
+  List<ChatMessageModel> _messages = [];
   List<AppNotificationModel> get notifications => project.notifications;
 
   int _maxBy<T>(List<T> items, int Function(T) pick) {
@@ -143,7 +147,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return maxId + 1;
   }
 
-  int _nextChatId() => _maxBy(chatMessages, (item) => item.id) + 1;
+  int _nextChatId() => _maxBy(_messages, (item) => item.id) + 1;
 
   String _nowLabel() {
     final now = TimeOfDay.now();
@@ -307,8 +311,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return items;
   }
 
+
   List<ChatMessageModel> get fileMessages {
-    return chatMessages
+    return _messages
         .where((message) => message.isFile)
         .toList()
         .reversed
@@ -316,7 +321,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   int get unreadChatCount {
-    return chatMessages
+    return _messages
         .where((message) => message.sender != '나' && !message.isRead)
         .length;
   }
@@ -410,7 +415,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       await widget.service.readAllChat(project.projectNumber);
       await _reloadProject();
     } on UnsupportedError {
-      final updated = chatMessages.map((message) {
+      final updated = _messages.map((message) {
         if (message.sender == '나' || message.isRead) return message;
         return message.copyWith(isRead: true);
       }).toList();
@@ -514,11 +519,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         isFile: false,
       );
       chatController.clear();
+      await _loadMessages();
       await _reloadProject();
       _scrollChatToBottom();
     } on UnsupportedError {
       final updated = [
-        ...chatMessages,
+        ..._messages,
         ChatMessageModel(
           id: _nextChatId(),
           sender: '나',
@@ -546,7 +552,26 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       });
     }
   }
-
+  Future<void> _loadMessages() async {
+    try {
+      final messages = await widget.service.fetchChatMessages(
+        projectNumber: widget.project.projectNumber,
+      );
+      print("loadMessages activated");
+      if (!mounted) return;
+      setState(() {
+        _messages = messages;
+        _isLoading = false;
+        print(messages);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      print('error occured');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
   Future<void> _sendAttachmentMessage(String message) async {
     try {
       await widget.service.sendChat(
@@ -558,7 +583,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       _scrollChatToBottom();
     } on UnsupportedError {
       final updated = [
-        ...chatMessages,
+        ..._messages,
         ChatMessageModel(
           id: _nextChatId(),
           sender: '나',
@@ -579,6 +604,128 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     } catch (e) {
       _showErrorSnackBar('파일 공유에 실패했어요.');
     }
+  }
+
+  Future<void> showMemberProfileSheet(MemberModel member) async {
+    Map<String, dynamic>? profileData;
+    bool isLoading = true;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            // 프로필 불러오기
+            if (isLoading && profileData == null) {
+              final token = widget.service.accessToken ?? '';
+              http.get(
+                Uri.parse('https://semothon13app-production.up.railway.app/profile/${member.username}'),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer $token',
+                },
+              ).then((response) {
+                if (response.statusCode == 200) {
+                  setSheetState(() {
+                    profileData = jsonDecode(response.body);
+                    isLoading = false;
+                  });
+                } else {
+                  setSheetState(() {
+                    isLoading = false;
+                  });
+                }
+              }).catchError((_) {
+                setSheetState(() {
+                  isLoading = false;
+                });
+              });
+            }
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.55,
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 42, height: 5,
+                    decoration: BoxDecoration(color: const Color(0xFFE5DAD7), borderRadius: BorderRadius.circular(99)),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Container(
+                        width: 50, height: 50,
+                        decoration: const BoxDecoration(color: Color(0xFFF3ECE8), shape: BoxShape.circle),
+                        alignment: Alignment.center,
+                        child: Text(member.name.isNotEmpty ? member.name[0] : '?', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF3A2A2A))),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(member.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF3A2A2A))),
+                            const SizedBox(height: 4),
+                            Text(member.studentId, style: const TextStyle(fontSize: 14, color: Color(0xFF7D6666))),
+                          ],
+                        ),
+                      ),
+                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (isLoading)
+                    const Expanded(child: Center(child: CircularProgressIndicator(color: Color(0xFFA31621))))
+                  else if (profileData != null)
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            _profileInfoTile('전공', profileData!['major']?.toString() ?? '미입력'),
+                            _profileInfoTile('MBTI', profileData!['mbti']?.toString() ?? '미입력'),
+                            _profileInfoTile('자기소개', profileData!['personality_summary']?.toString() ?? '미입력'),
+                            _profileInfoTile('취미', profileData!['hobby']?.toString() ?? '미입력'),
+                            _profileInfoTile('역할', profileData!['role']?.toString() ?? '미입력'),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    const Expanded(child: Center(child: Text('프로필을 불러올 수 없어요', style: TextStyle(color: Color(0xFF7D6666), fontSize: 15)))),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _profileInfoTile(String label, String value) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F3F0),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF7D6666))),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF3A2A2A))),
+        ],
+      ),
+    );
   }
 
   Future<void> showAddMemberSheet() async {
@@ -2534,6 +2681,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   onDeleteMember: deleteMember,
                   onEditSchedule: showEditScheduleSheet,
                   onDeleteSchedule: deleteSchedule,
+                  onTapMember: showMemberProfileSheet,
                   onOpenStage: (stageIndex) => _openProjectStage(context, stageIndex),
                 ),
               ],
@@ -2573,7 +2721,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         return Padding(
           padding: const EdgeInsets.fromLTRB(18, 20, 18, 12),
           child: _ChatTab(
-            messages: chatMessages,
+            messages: _messages,
             controller: chatController,
             focusNode: chatFocusNode,
             scrollController: chatScrollController,
@@ -3008,6 +3156,8 @@ class _OverviewTab extends StatelessWidget {
   final void Function(int index) onDeleteMember;
   final void Function(ScheduleModel schedule, int index) onEditSchedule;
   final void Function(int index) onDeleteSchedule;
+  final void Function(MemberModel member)? onTapMember;
+
   final void Function(int stageIndex) onOpenStage;
   const _OverviewTab({
     required this.members,
@@ -3021,6 +3171,7 @@ class _OverviewTab extends StatelessWidget {
     required this.onDeleteMember,
     required this.onEditSchedule,
     required this.onDeleteSchedule,
+    this.onTapMember,
     required this.onOpenStage,
   });
 
@@ -3068,12 +3219,15 @@ class _OverviewTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: _SimpleListTile(
-                    title: member.name,
-                    subtitle: member.studentId,
-                    leadingText: member.name.isNotEmpty
-                        ? member.name.characters.first
-                        : '?',
+                  child: GestureDetector(
+                    onTap: () => onTapMember?.call(member),
+                    child: _SimpleListTile(
+                      title: member.name,
+                      subtitle: member.studentId,
+                      leadingText: member.name.isNotEmpty
+                          ? member.name.characters.first
+                          : '?',
+                    ),
                   ),
                 ),
               );
@@ -3623,7 +3777,6 @@ class _ChatTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Column(
@@ -4435,7 +4588,7 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMine = message.sender == '나';
+    final bool isMine = message.isMe;
     final bool isAi = message.isAi;
 
     final Color bubbleColor = isMine

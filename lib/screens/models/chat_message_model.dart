@@ -21,17 +21,36 @@ class ChatMessageModel {
     this.roleTag = '',
   });
 
-  factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
+  factory ChatMessageModel.fromJson(
+      Map<String, dynamic> json,
+      int currentUserId,
+      ) {
+    final senderUserId = _toInt(json['sender_user_id']);
+    final senderName = _toString(json['sender_name']);
+    final content = _toString(json['content']);
+    final createdAtRaw = _toString(json['created_at']);
+    final messageType = _toString(json['message_type']).toUpperCase();
+
+    final createdAt = DateTime.tryParse(createdAtRaw)?.toLocal();
+
+    String formattedTime = '';
+    if (createdAt != null) {
+      final period = createdAt.hour < 12 ? '오전' : '오후';
+      final hour = createdAt.hour % 12 == 0 ? 12 : createdAt.hour % 12;
+      final minute = createdAt.minute.toString().padLeft(2, '0');
+      formattedTime = '$period $hour:$minute';
+    }
+
     return ChatMessageModel(
       id: _toInt(json['id']),
-      sender: _toString(json['sender']),
-      message: _toString(json['message']),
-      time: _toString(json['time']),
-      isMe: _toBool(json['isMe'] ?? json['is_me']),
-      isRead: _toBool(json['isRead'] ?? json['is_read']),
-      isAi: _toBool(json['isAi'] ?? json['is_ai']),
-      isFile: _toBool(json['isFile'] ?? json['is_file']),
-      roleTag: _toString(json['roleTag'] ?? json['role_tag']),
+      sender: senderName,
+      message: content,
+      time: formattedTime,
+      isMe: senderUserId == currentUserId,
+      isRead: true,
+      isAi: messageType == 'AI',
+      isFile: messageType == 'FILE',
+      roleTag: _toString(json['role_tag']),
     );
   }
 
