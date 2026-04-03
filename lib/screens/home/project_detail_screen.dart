@@ -3442,12 +3442,57 @@ class _OverviewTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _AiCoachCard(
-          summaryStatus: summaryStatus,
-          urgentTaskCount: urgentTaskCount,
-          overdueTaskCount: overdueTaskCount,
+              _SectionCard(
+        title: '프로젝트 단계',
+        icon: Icons.auto_awesome_outlined,
+        buttonText: '보기',
+        onButtonTap: () => onOpenStage(0),
+        child: Column(
+          children: [
+            _ProjectStageTile(
+              title: '아이스브레이킹',
+              subtitle: '완료됨',
+              status: '완료됨',
+              statusColor: const Color(0xFF16C75A),
+              iconBgColor: const Color(0xFF16C75A),
+              icon: Icons.check_circle_outline_rounded,
+              onTap: () => onOpenStage(0),
+            ),
+            const SizedBox(height: 12),
+            _ProjectStageTile(
+              title: '주제선정',
+              subtitle: '완료됨',
+              status: '완료됨',
+              statusColor: const Color(0xFF16C75A),
+              iconBgColor: const Color(0xFF16C75A),
+              icon: Icons.check_circle_outline_rounded,
+              onTap: () => onOpenStage(1),
+            ),
+            const SizedBox(height: 12),
+            _ProjectStageTile(
+              title: '역할분배',
+              subtitle: '완료됨',
+              status: '완료됨',
+              statusColor: const Color(0xFF16C75A),
+              iconBgColor: const Color(0xFF16C75A),
+              icon: Icons.check_circle_outline_rounded,
+              onTap: () => onOpenStage(2),
+            ),
+            const SizedBox(height: 12),
+            _ProjectStageTile(
+              title: '협업진행',
+              subtitle: '진행중',
+              status: '계속하기',
+              statusColor: _ProjectDetailScreenState.kWine,
+              iconBgColor: const Color(0xFF3B82F6),
+              icon: Icons.access_time_rounded,
+              showActionButton: true,
+              onTap: () => onOpenStage(3),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
+      ),
+      const SizedBox(height: 16),
         _SectionCard(
           title: '팀원',
           icon: Icons.group_outlined,
@@ -3543,56 +3588,7 @@ class _OverviewTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _SectionCard(
-          title: '프로젝트 단계',
-          icon: Icons.auto_awesome_outlined,
-          buttonText: '보기',
-          onButtonTap: () => onOpenStage(0),
-          child: Column(
-            children: [
-              _ProjectStageTile(
-                title: '아이스브레이킹',
-                subtitle: '완료됨',
-                status: '완료됨',
-                statusColor: const Color(0xFF16C75A),
-                iconBgColor: const Color(0xFF16C75A),
-                icon: Icons.check_circle_outline_rounded,
-                onTap: () => onOpenStage(0),
-              ),
-              const SizedBox(height: 12),
-              _ProjectStageTile(
-                title: '주제선정',
-                subtitle: '완료됨',
-                status: '완료됨',
-                statusColor: const Color(0xFF16C75A),
-                iconBgColor: const Color(0xFF16C75A),
-                icon: Icons.check_circle_outline_rounded,
-                onTap: () => onOpenStage(1),
-              ),
-              const SizedBox(height: 12),
-              _ProjectStageTile(
-                title: '역할분배',
-                subtitle: '완료됨',
-                status: '완료됨',
-                statusColor: const Color(0xFF16C75A),
-                iconBgColor: const Color(0xFF16C75A),
-                icon: Icons.check_circle_outline_rounded,
-                onTap: () => onOpenStage(2),
-              ),
-              const SizedBox(height: 12),
-              _ProjectStageTile(
-                title: '협업진행',
-                subtitle: '진행중',
-                status: '계속하기',
-                statusColor: _ProjectDetailScreenState.kWine,
-                iconBgColor: const Color(0xFF3B82F6),
-                icon: Icons.access_time_rounded,
-                showActionButton: true,
-                onTap: () => onOpenStage(3),
-              ),
-            ],
-          ),
-        ),
+       
       ],
     );
   }
