@@ -10,8 +10,7 @@ import 'project_detail_screen.dart';
 import 'widgets/home_calendar_card.dart';
 import 'widgets/home_today_ai_card.dart';
 import 'widgets/project_badge_section.dart';
-
-
+import 'icebreaking_stage_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? userName;
@@ -42,7 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
   static const Color successTextColor = Color(0xFF2E8B57);
   static const Color inputFillColor = Color(0xFFF9F1F1);
 
-  static const String baseUrl = 'https://semothon13app-production.up.railway.app';
+  static const String baseUrl =
+      'https://semothon13app-production.up.railway.app';
 
   String displayName = '';
   late final ProjectService _projectService;
@@ -91,36 +91,36 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {}
   }
 
-Future<void> _loadProjects() async {
-  setState(() {
-    _isLoadingProjects = true;
-    _projectLoadError = null;
-  });
-
-  try {
-    final fetched = await _projectService.fetchProjects();
-
-    if (!mounted) return;
-
+  Future<void> _loadProjects() async {
     setState(() {
-      if (fetched.isEmpty) {
+      _isLoadingProjects = true;
+      _projectLoadError = null;
+    });
+
+    try {
+      final fetched = await _projectService.fetchProjects();
+
+      if (!mounted) return;
+
+      setState(() {
+        if (fetched.isEmpty) {
+          projects = List<ProjectDetailModel>.from(_fallbackProjects());
+          _projectLoadError = '서버 프로젝트가 없어 임시 프로젝트를 표시합니다.';
+        } else {
+          projects = List<ProjectDetailModel>.from(fetched);
+        }
+        _isLoadingProjects = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
         projects = List<ProjectDetailModel>.from(_fallbackProjects());
-        _projectLoadError = '서버 프로젝트가 없어 임시 프로젝트를 표시합니다.';
-      } else {
-        projects = List<ProjectDetailModel>.from(fetched);
-      }
-      _isLoadingProjects = false;
-    });
-  } catch (_) {
-    if (!mounted) return;
-
-    setState(() {
-      projects = List<ProjectDetailModel>.from(_fallbackProjects());
-      _projectLoadError = '서버 프로젝트 목록을 불러오지 못해 임시 데이터를 표시합니다.';
-      _isLoadingProjects = false;
-    });
+        _projectLoadError = '서버 프로젝트 목록을 불러오지 못해 임시 데이터를 표시합니다.';
+        _isLoadingProjects = false;
+      });
+    }
   }
-}
 
   List<ProjectDetailModel> _fallbackProjects() {
     return const [
@@ -166,16 +166,16 @@ Future<void> _loadProjects() async {
       barrierColor: Colors.black.withOpacity(0.25),
       builder: (dialogContext) {
         return Dialog(
-  backgroundColor: Colors.white,
-  surfaceTintColor: Colors.white,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(24),
-  ),
-  child: Padding(
-    padding: const EdgeInsets.all(22),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -316,12 +316,12 @@ Future<void> _loadProjects() async {
       barrierColor: Colors.black.withOpacity(0.25),
       builder: (dialogContext) {
         return Dialog(
-  backgroundColor: Colors.white,
-  surfaceTintColor: Colors.white,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(24),
-  ),
-  child: Padding(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
             padding: const EdgeInsets.all(22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -661,6 +661,49 @@ Future<void> _loadProjects() async {
     );
   }
 
+  ProjectDetailModel? _findJoinedProjectFromResponse(
+      Map<String, dynamic> data) {
+    final joinedRoomId = data['room_id']?.toString().trim();
+    final joinedProjectId = data['project_id']?.toString().trim();
+    final joinedTitle =
+        (data['title'] ?? data['room_title'] ?? '').toString().trim();
+
+    for (final project in projects) {
+      final number = project.projectNumber.trim();
+      final title = project.projectTitle.trim();
+
+      if (joinedProjectId != null && joinedProjectId.isNotEmpty) {
+        if (number == joinedProjectId) return project;
+      }
+
+      if (joinedRoomId != null && joinedRoomId.isNotEmpty) {
+        if (number == joinedRoomId) return project;
+      }
+
+      if (joinedTitle.isNotEmpty && title == joinedTitle) {
+        return project;
+      }
+    }
+
+    return null;
+  }
+
+  Future<void> _moveToIceBreakingAfterJoin(Map<String, dynamic> data) async {
+    await _loadProjects();
+
+    if (!mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const IcebreakingStageScreen(),
+      ),
+    );
+
+    if (!mounted) return;
+    await _loadProjects();
+  }
+
   Color _statusColor(String status) {
     if (status.contains('기한 지난')) return const Color(0xFFFF6B2C);
     if (status.contains('마감 임박')) return const Color(0xFFFF8A3D);
@@ -756,84 +799,85 @@ Future<void> _loadProjects() async {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-   _buildTopSection(context),
-const SizedBox(height: 26),
-const Text(
-  ' 새 프로젝트 시작하기',
-  style: TextStyle(
-    fontSize: 22,
-    fontWeight: FontWeight.w600,
-    color: ProjectBadgeSection.titleColor,
-  ),
-),
-const SizedBox(height: 14),
-_buildActionButtons(context),
-const SizedBox(height: 26),
-const ProjectBadgeSection(),
-const SizedBox(height: 22),
-const HomeTodayAiCard(),
-const SizedBox(height: 18),
-const HomeCalendarCard(),
-    const SizedBox(height: 24),
-if (_projectLoadError != null) ...[
-  const SizedBox(height: 14),
-  Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: const Color(0xFFFFF4F1),
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(
-        color: const Color(0xFFFFD6CC),
-      ),
-    ),
-    child: Text(
-      _projectLoadError!,
-      style: const TextStyle(
-        color: Color(0xFF9A4D36),
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        height: 1.4,
-      ),
-    ),
-  ),
-],
-const SizedBox(height: 18),
-const Text(
-  '  내 프로젝트 목록',
-  style: TextStyle(
-    fontSize: 21,
-    fontWeight: FontWeight.w900,
-    color: Color(0xFF3A2A2A),
-  ),
-),
-const SizedBox(height: 14),
-if (_isLoadingProjects)
-  const _LoadingProjectView()
-else if (projects.isEmpty)
-  const _EmptyProjectView()
-else
-  ListView.separated(
-    physics: const NeverScrollableScrollPhysics(),
-    shrinkWrap: true,
-    itemCount: projects.length,
-    separatorBuilder: (_, __) => const SizedBox(height: 14),
-    itemBuilder: (context, index) {
-      final project = projects[index];
-      final summaryStatus = _summaryStatus(project);
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTopSection(context),
+                      const SizedBox(height: 26),
+                      const Text(
+                        ' 새 프로젝트 시작하기',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                          color: ProjectBadgeSection.titleColor,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _buildActionButtons(context),
+                      const SizedBox(height: 26),
+                      const ProjectBadgeSection(),
+                      const SizedBox(height: 22),
+                      const HomeTodayAiCard(),
+                      const SizedBox(height: 18),
+                      const HomeCalendarCard(),
+                      const SizedBox(height: 24),
+                      if (_projectLoadError != null) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF4F1),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: const Color(0xFFFFD6CC),
+                            ),
+                          ),
+                          child: Text(
+                            _projectLoadError!,
+                            style: const TextStyle(
+                              color: Color(0xFF9A4D36),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      const Text(
+                        '  내 프로젝트 목록',
+                        style: TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF3A2A2A),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      if (_isLoadingProjects)
+                        const _LoadingProjectView()
+                      else if (projects.isEmpty)
+                        const _EmptyProjectView()
+                      else
+                        ListView.separated(
+                          physics: const NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: projects.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            final project = projects[index];
+                            final summaryStatus = _summaryStatus(project);
 
-      return _ProjectCard(
-        project: project,
-        statusColor: _statusColor(summaryStatus),
-        summaryStatus: summaryStatus,
-        updatedText: _updatedText(project),
-        onTap: () => _openProject(project, index),
-        onMoreTap: () => _showProjectMenu(index),
-      );
-    },
-  ),
+                            return _ProjectCard(
+                              project: project,
+                              statusColor: _statusColor(summaryStatus),
+                              summaryStatus: summaryStatus,
+                              updatedText: _updatedText(project),
+                              onTap: () => _openProject(project, index),
+                              onMoreTap: () => _showProjectMenu(index),
+                            );
+                          },
+                        ),
                     ],
                   ),
                 ),
@@ -844,224 +888,227 @@ else
       ),
     );
   }
-Widget _buildTopSection(BuildContext context) {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-    decoration: BoxDecoration(
-      color: const Color(0xFFFCFBFB),
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: const Color(0xFFEAE1E1)),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x0D000000),
-          blurRadius: 10,
-          offset: Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Stack(
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                children: [
-                  Container(
-                    width: 76,
-                    height: 76,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFFE0E0E0),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/face.png',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(14),
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ProfileEditScreen(
-                              token: _projectService.accessToken,
-                            ),
-                          ),
-                        );
-                        _loadProfile();
-                      },
-                      child: Ink(
-                        width: 92,
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFFAFA),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: borderColor),
+
+  Widget _buildTopSection(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCFBFB),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFEAE1E1)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  children: [
+                    Container(
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFE0E0E0),
+                          width: 1.5,
                         ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.edit_outlined,
-                              size: 14,
-                              color: primaryColor,
-                            ),
-                            SizedBox(width: 5),
-                            Text(
-                              '프로필 편집',
-                              style: TextStyle(
-                                color: Color(0xFF5F4747),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/face.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProfileEditScreen(
+                                token: _projectService.accessToken,
                               ),
                             ),
-                          ],
+                          );
+                          _loadProfile();
+                        },
+                        child: Ink(
+                          width: 92,
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFFAFA),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.edit_outlined,
+                                size: 14,
+                                color: primaryColor,
+                              ),
+                              SizedBox(width: 5),
+                              Text(
+                                '프로필 편집',
+                                style: TextStyle(
+                                  color: Color(0xFF5F4747),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 6, right: 30),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${displayName.isEmpty ? "사용자" : displayName}님,\n환영합니다!',
-                        style: const TextStyle(
-                          color: Color(0xFF3A2A2A),
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          height: 1.22,
+                  ],
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 6, right: 30),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${displayName.isEmpty ? "사용자" : displayName}님,\n환영합니다!',
+                          style: const TextStyle(
+                            color: Color(0xFF3A2A2A),
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            height: 1.22,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-Text.rich(
-  TextSpan(
-    style: const TextStyle(
-      color: subtitleColor,
-      fontSize: 14,
-      height: 1.4,
-    ),
-    children: [
-      const TextSpan(text: '• 오늘 할 일 '),
-      const TextSpan(
-        text: '3개',
-        style: TextStyle(
-          color: primaryColor,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      const TextSpan(text: '\n• 마감임박 '),
-      const TextSpan(
-        text: '2개',
-        style: TextStyle(
-          color:Color(0xFF3E8E41),
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    ],
-  ),
-),
-                    ],
+                        const SizedBox(height: 16),
+                        Text.rich(
+                          TextSpan(
+                            style: const TextStyle(
+                              color: subtitleColor,
+                              fontSize: 14,
+                              height: 1.4,
+                            ),
+                            children: [
+                              const TextSpan(text: '• 오늘 할 일 '),
+                              const TextSpan(
+                                text: '3개',
+                                style: TextStyle(
+                                  color: primaryColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const TextSpan(text: '\n• 마감임박 '),
+                              const TextSpan(
+                                text: '2개',
+                                style: TextStyle(
+                                  color: Color(0xFF3E8E41),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: OutlinedButton(
-            onPressed: () async {
-              await _authService.logout();
-              _projectService.clearAccessToken();
-
-              if (!mounted) return;
-
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => LoginScreen(
-                    authService: _authService,
-                    projectService: _projectService,
-                  ),
-                ),
-                (route) => false,
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: borderColor),
-              backgroundColor: const Color(0xFFFFFAFA),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ],
             ),
-            child: const Text(
-              '로그아웃',
-              style: TextStyle(
-                color: Color(0xFF5F4747),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: OutlinedButton(
+              onPressed: () async {
+                await _authService.logout();
+                _projectService.clearAccessToken();
+
+                if (!mounted) return;
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LoginScreen(
+                      authService: _authService,
+                      projectService: _projectService,
+                    ),
+                  ),
+                  (route) => false,
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: borderColor),
+                backgroundColor: const Color(0xFFFFFAFA),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                '로그아웃',
+                style: TextStyle(
+                  color: Color(0xFF5F4747),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTodayTaskItem(String text) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F1F1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.check_circle_outline,
+            size: 18,
+            color: primaryColor,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF3A2A2A),
                 fontWeight: FontWeight.w600,
-                fontSize: 12,
               ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
- 
-Widget _buildTodayTaskItem(String text) {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    decoration: BoxDecoration(
-      color: const Color(0xFFF9F1F1),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Row(
-      children: [
-        const Icon(
-          Icons.check_circle_outline,
-          size: 18,
-          color: primaryColor,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF3A2A2A),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
+
   Future<void> _showJoinByCodeDialog() async {
     final codeController = TextEditingController();
     bool isJoining = false;
@@ -1073,12 +1120,12 @@ Widget _buildTodayTaskItem(String text) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Dialog(
-  backgroundColor: Colors.white,
-  surfaceTintColor: Colors.white,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(24),
-  ),
-  child: Padding(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
                 padding: const EdgeInsets.all(22),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1139,44 +1186,52 @@ Widget _buildTodayTaskItem(String text) {
                             onPressed: isJoining
                                 ? null
                                 : () async {
-                              final code = codeController.text.trim();
-                              if (code.isEmpty) return;
+                                    final code = codeController.text.trim();
+                                    if (code.isEmpty) return;
 
-                              setDialogState(() => isJoining = true);
+                                    setDialogState(() => isJoining = true);
 
-                              try {
-                                final token = _projectService.accessToken ?? '';
-                                final response = await http.post(
-                                  Uri.parse('$baseUrl/rooms/join-by-invite-code'),
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': 'Bearer $token',
+                                    try {
+                                      final token =
+                                          _projectService.accessToken ?? '';
+                                      final response = await http.post(
+                                        Uri.parse(
+                                            '$baseUrl/rooms/join-by-invite-code'),
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                          'Authorization': 'Bearer $token',
+                                        },
+                                        body: jsonEncode({'invite_code': code}),
+                                      );
+
+                                      final data = jsonDecode(response.body);
+
+                                      if (!mounted) return;
+
+                                      if (response.statusCode == 200) {
+                                        Navigator.of(dialogContext).pop();
+
+                                        final joinedTitle = (data['title'] ??
+                                                data['room_title'] ??
+                                                '팀')
+                                            .toString();
+
+                                        _showSnackBar('$joinedTitle 팀에 참여했어요!');
+
+                                        await _moveToIceBreakingAfterJoin(data);
+                                      } else {
+                                        setDialogState(() => isJoining = false);
+                                        _showSnackBar(
+                                          data['detail']?.toString() ??
+                                              '참여에 실패했어요',
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (!mounted) return;
+                                      setDialogState(() => isJoining = false);
+                                      _showSnackBar('서버 연결 실패: $e');
+                                    }
                                   },
-                                  body: jsonEncode({'invite_code': code}),
-                                );
-
-                                final data = jsonDecode(response.body);
-
-                                if (!mounted) return;
-
-                                if (response.statusCode == 200) {
-                                  Navigator.of(dialogContext).pop();
-                                  _showSnackBar(
-                                    '${data['title']} 팀에 참여했어요!',
-                                  );
-                                  _loadProjects();
-                                } else {
-                                  setDialogState(() => isJoining = false);
-                                  _showSnackBar(
-                                    data['detail']?.toString() ?? '참여에 실패했어요',
-                                  );
-                                }
-                              } catch (e) {
-                                if (!mounted) return;
-                                setDialogState(() => isJoining = false);
-                                _showSnackBar('서버 연결 실패: $e');
-                              }
-                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryColor,
                               foregroundColor: Colors.white,
@@ -1188,17 +1243,18 @@ Widget _buildTodayTaskItem(String text) {
                             ),
                             child: isJoining
                                 ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
                                 : const Text(
-                              '참여하기',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
+                                    '참여하기',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w700),
+                                  ),
                           ),
                         ),
                       ],
@@ -1212,65 +1268,66 @@ Widget _buildTodayTaskItem(String text) {
       },
     );
   }
-Widget _buildActionButtons(BuildContext context) {
-  return Row(
-    children: [
-      Expanded(
-        child: SizedBox(
-          height: 56,
-          child: OutlinedButton.icon(
-            onPressed: _showAddProjectDialog,
-            icon: const Icon(Icons.add, color: primaryColor, size: 20),
-            label: const Text(
-              '새 팀 생성하기',
-              style: TextStyle(
-                color: Color(0xFF4B3A3A),
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+
+  Widget _buildActionButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 56,
+            child: OutlinedButton.icon(
+              onPressed: _showAddProjectDialog,
+              icon: const Icon(Icons.add, color: primaryColor, size: 20),
+              label: const Text(
+                '새 팀 생성하기',
+                style: TextStyle(
+                  color: Color(0xFF4B3A3A),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            style: OutlinedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFFAFA),
-              side: const BorderSide(color: borderColor),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-          ),
-        ),
-      ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: SizedBox(
-          height: 56,
-          child: OutlinedButton.icon(
-            onPressed: _showJoinByCodeDialog,
-            icon: const Icon(
-              Icons.groups_2_outlined,
-              color: primaryColor,
-              size: 18,
-            ),
-            label: const Text(
-              '팀 코드로 참여',
-              style: TextStyle(
-                color: Color(0xFF4B3A3A),
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFFAFA),
-              side: const BorderSide(color: borderColor),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFFAFA),
+                side: const BorderSide(color: borderColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ),
         ),
-      ),
-    ],
-  );
-}
+        const SizedBox(width: 10),
+        Expanded(
+          child: SizedBox(
+            height: 56,
+            child: OutlinedButton.icon(
+              onPressed: _showJoinByCodeDialog,
+              icon: const Icon(
+                Icons.groups_2_outlined,
+                color: primaryColor,
+                size: 18,
+              ),
+              label: const Text(
+                '팀 코드로 참여',
+                style: TextStyle(
+                  color: Color(0xFF4B3A3A),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFFAFA),
+                side: const BorderSide(color: borderColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildProfileEditCard(BuildContext context) {
     return Material(
@@ -1281,9 +1338,9 @@ Widget _buildActionButtons(BuildContext context) {
           await Navigator.push(
             context,
             MaterialPageRoute(
-               builder: (_) => ProfileEditScreen(
+              builder: (_) => ProfileEditScreen(
                 token: _projectService.accessToken,
-                ),
+              ),
             ),
           );
           _loadProfile();
@@ -1371,64 +1428,64 @@ Widget _buildActionButtons(BuildContext context) {
     );
   }
 
-Widget _buildProjectIntroCard() {
-  return Material(
-    color: Colors.transparent,
-    child: InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: _showAddProjectDialog,
-      child: Ink(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFEAE1E1)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0D000000),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '새 프로젝트 추가',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF3A2A2A),
+  Widget _buildProjectIntroCard() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: _showAddProjectDialog,
+        child: Ink(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFEAE1E1)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0D000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '새 프로젝트 추가',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF3A2A2A),
+                      ),
                     ),
                   ),
-                ),
-                Icon(
-                  Icons.add_circle_outline_rounded,
-                  color: primaryColor,
-                  size: 22,
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            Text(
-              '새 프로젝트를 만들고 팀플을 바로 시작해보세요.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B5B5B),
-                height: 1.5,
+                  Icon(
+                    Icons.add_circle_outline_rounded,
+                    color: primaryColor,
+                    size: 22,
+                  ),
+                ],
               ),
-            ),
-          ],
+              SizedBox(height: 8),
+              Text(
+                '새 프로젝트를 만들고 팀플을 바로 시작해보세요.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6B5B5B),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class _ProjectCard extends StatelessWidget {
