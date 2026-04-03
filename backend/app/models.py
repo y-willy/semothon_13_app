@@ -183,3 +183,83 @@ class ChatMessage(Base):
     created_at = Column(DateTime,nullable=False,server_default=text("CURRENT_TIMESTAMP"))
 
     sender = relationship("User", foreign_keys=[sender_user_id])
+
+    from sqlalchemy import (
+    Column,
+    BigInteger,
+    ForeignKey,
+    String,
+    Text,
+    Enum,
+    DateTime,
+    text,
+)
+from sqlalchemy.orm import relationship
+
+class Todo(Base):
+    __tablename__ = "todos"
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+
+    room_id = Column(BigInteger, ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
+    creator_user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    assignee_user_id = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+
+    status = Column(
+        Enum("TODO", "IN_PROGRESS", "BLOCKED", "REVIEW", "DONE", "CANCELLED", name="todo_status_enum"),
+        nullable=True,
+        server_default=text("'TODO'")
+    )
+
+    success_flag = Column(Boolean, nullable=True)
+    progress_percent = Column(Integer, nullable=True)
+
+    priority = Column(
+        Enum("LOW", "MEDIUM", "HIGH", "URGENT", name="todo_priority_enum"),
+        nullable=True,
+        server_default=text("'MEDIUM'")
+    )
+
+    category = Column(String(50), nullable=True)
+    tag = Column(String(100), nullable=True)
+
+    start_date = Column(DateTime, nullable=True)
+    due_date = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+
+    estimated_minutes = Column(Integer, nullable=True)
+    actual_minutes = Column(Integer, nullable=True)
+
+    visibility = Column(
+        Enum("PRIVATE", "ROOM", "PUBLIC", name="todo_visibility_enum"),
+        nullable=True,
+        server_default=text("'ROOM'")
+    )
+
+    source_type = Column(
+        Enum("MANUAL", "AI", "SYSTEM", name="todo_source_type_enum"),
+        nullable=True,
+        server_default=text("'MANUAL'")
+    )
+
+    ai_suggested = Column(Boolean, nullable=True)
+
+    sort_order = Column(Integer, nullable=True)
+    archived = Column(Boolean, nullable=True)
+    deleted = Column(Boolean, nullable=True)
+
+    created_at = Column(DateTime, nullable=True, server_default=text("CURRENT_TIMESTAMP"))
+    updated_at = Column(
+        DateTime,
+        nullable=True,
+        server_default=text("CURRENT_TIMESTAMP"),
+        server_onupdate=text("CURRENT_TIMESTAMP"),
+    )
+
+    creator = relationship("User", foreign_keys=[creator_user_id])
+    assignee = relationship("User", foreign_keys=[assignee_user_id])
+    room = relationship("Room")

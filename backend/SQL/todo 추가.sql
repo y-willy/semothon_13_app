@@ -78,3 +78,5 @@ CREATE TABLE todos (
     INDEX idx_todos_status (status),
     INDEX idx_todos_due_date (due_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE todos ADD COLUMN sort_order INT;
