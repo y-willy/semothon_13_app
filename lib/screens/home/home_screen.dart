@@ -1073,10 +1073,12 @@ Widget _buildTodayTaskItem(String text) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Padding(
+  backgroundColor: Colors.white,
+  surfaceTintColor: Colors.white,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(24),
+  ),
+  child: Padding(
                 padding: const EdgeInsets.all(22),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
