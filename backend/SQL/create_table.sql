@@ -13,6 +13,7 @@ CREATE TABLE users (
 
 CREATE TABLE user_profiles (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    distributed VARCHAR(100) NULL,
     user_id BIGINT UNSIGNED NOT NULL UNIQUE,
     display_name VARCHAR(50) NOT NULL,
     mbti VARCHAR(10) NULL,
