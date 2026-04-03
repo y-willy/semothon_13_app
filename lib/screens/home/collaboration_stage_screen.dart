@@ -12,7 +12,7 @@ class _CollaborationStageScreenState
     extends State<CollaborationStageScreen> {
   static const Color kPrimary = Color(0xFFA31621);
   static const Color kPrimaryDark = Color(0xFF7E1018);
-  static const Color kBackground = Color(0xFFF6F1F1);
+  static const Color kBackground = Colors.white;
   static const Color kCard = Color(0xFFFFFCFC);
   static const Color kBorder = Color(0xFFE6CFCF);
   static const Color kText = Color(0xFF3A2A2A);
