@@ -763,6 +763,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = await Navigator.push<ProjectDetailModel>(
       context,
       MaterialPageRoute(
+        settings: const RouteSettings(name: 'ProjectDetailScreen'),
         builder: (_) =>
             ProjectDetailScreen(project: project, service: _projectService),
       ),

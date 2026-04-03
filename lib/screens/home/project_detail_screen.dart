@@ -99,7 +99,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   );
   break;
       case 1:
-        screen = const TopicSelectionStageScreen();
+        screen = TopicSelectionStageScreen(
+          project: project,
+          service: widget.service,
+        );
         break;
       case 2:
         screen = const RoleAssignmentStageScreen();
