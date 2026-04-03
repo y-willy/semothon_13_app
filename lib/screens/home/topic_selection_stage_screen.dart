@@ -1063,12 +1063,22 @@ class RecommendationResultScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                            const RoleAssignmentStageScreen()),
-                      );
+                      if (project != null && service != null) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            settings: const RouteSettings(name: 'ProjectDetailScreen'),
+                            builder: (_) => ProjectDetailScreen(
+                              project: project!,
+                              service: service!,
+                            ),
+                          ),
+                          (route) => route.isFirst,
+                        );
+                      } else {
+                        Navigator.of(context).popUntil((route) {
+                          return route.settings.name == 'ProjectDetailScreen' || route.isFirst;
+                        });
+                      }
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: kWine,
@@ -1077,7 +1087,7 @@ class RecommendationResultScreen extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: const Text('역할 분배하기',
+                    child: const Text('대시보드 이동',
                         style: TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w800)),
                   ),
@@ -1086,21 +1096,12 @@ class RecommendationResultScreen extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      if (project != null && service != null) {
-                        // 프로젝트 디테일 화면으로 이동
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => ProjectDetailScreen(
-                              project: project!,
-                              service: service!,
-                            ),
-                          ),
-                              (route) => route.isFirst,
-                        );
-                      } else {
-                        // project/service가 없으면 홈으로 돌아가기
-                        Navigator.of(context).popUntil((route) => route.isFirst);
-                      }
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RoleAssignmentStageScreen(),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kWine,
@@ -1110,7 +1111,7 @@ class RecommendationResultScreen extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: const Text('대시보드 이동',
+                    child: const Text('역할 분배하기',
                         style: TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w800)),
                   ),
