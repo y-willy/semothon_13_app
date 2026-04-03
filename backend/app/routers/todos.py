@@ -1,46 +1,48 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Todo, Room, User
-from app import schemas
+from app.dependencies import get_current_user
+from app.models import User, Room, Todo
+from app.schemas import (
+    TodoCreateRequest,
+    TodoUpdateRequest,
+    TodoStatusUpdateRequest,
+    TodoReorderRequest,
+    TodoResponse,
+    TodoListResponse,
+    TodoSingleResponse,
+    MessageResponse,
+)
+from app.services.todo_service import get_next_sort_order, apply_status_side_effects
 
 router = APIRouter(prefix="/todos", tags=["todos"])
 
-@router.post(
-    "",
-    response_model=schemas.TodoResponse,
-    summary="Todo 등록"
-)
+@router.post("", response_model=TodoSingleResponse, status_code=status.HTTP_201_CREATED)
 def create_todo(
-    request: schemas.TodoCreateRequest,
+    request: TodoCreateRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     room = db.query(Room).filter(Room.id == request.room_id).first()
-    if room is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="해당 room이 존재하지 않습니다."
-        )
-
-    creator = db.query(User).filter(User.id == request.creator_user_id).first()
-    if creator is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="creator_user_id에 해당하는 사용자가 존재하지 않습니다."
-        )
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
 
     if request.assignee_user_id is not None:
         assignee = db.query(User).filter(User.id == request.assignee_user_id).first()
-        if assignee is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="assignee_user_id에 해당하는 사용자가 존재하지 않습니다."
-            )
+        if not assignee:
+            raise HTTPException(status_code=404, detail="Assignee user not found")
 
-    new_todo = Todo(
+    sort_order = request.sort_order
+    if sort_order is None:
+        sort_order = get_next_sort_order(db, request.room_id)
+
+    todo = Todo(
         room_id=request.room_id,
-        creator_user_id=request.creator_user_id,
+        creator_user_id=current_user.id,
         assignee_user_id=request.assignee_user_id,
         title=request.title,
         description=request.description,
@@ -55,241 +57,198 @@ def create_todo(
         completed_at=request.completed_at,
         estimated_minutes=request.estimated_minutes,
         actual_minutes=request.actual_minutes,
+        is_recurring=request.is_recurring,
+        recurrence_rule=request.recurrence_rule,
         visibility=request.visibility,
         source_type=request.source_type,
         ai_suggested=request.ai_suggested,
-        sort_order=request.sort_order,
+        sort_order=sort_order,
         archived=request.archived,
         deleted=request.deleted,
     )
 
-    db.add(new_todo)
+    apply_status_side_effects(todo)
+
+    db.add(todo)
     db.commit()
-    db.refresh(new_todo)
+    db.refresh(todo)
 
-    return new_todo
+    return {"success": True, "todo": todo}
 
-
-@router.get(
-    "/users/{user_id}",
-    response_model=schemas.TodoListResponse,
-    summary="개인 Todo 조회"
-)
-def get_user_todos(
-    user_id: int,
+@router.get("/me", response_model=TodoListResponse)
+def get_my_todos(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    include_archived: bool = Query(False),
+    include_deleted: bool = Query(False),
+    status_filter: Optional[str] = Query(None),
 ):
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="해당 사용자가 존재하지 않습니다."
-        )
+    query = db.query(Todo).filter(Todo.assignee_user_id == current_user.id)
 
-    todos = (
-        db.query(Todo)
-        .filter(
-            Todo.assignee_user_id == user_id,
-            (Todo.deleted == False) | (Todo.deleted.is_(None))
-        )
-        .order_by(Todo.created_at.desc())
-        .all()
-    )
+    if not include_archived:
+        query = query.filter((Todo.archived.is_(False)) | (Todo.archived.is_(None)))
 
-    return schemas.TodoListResponse(
-        success=True,
-        todos=todos,
-    )
+    if not include_deleted:
+        query = query.filter((Todo.deleted.is_(False)) | (Todo.deleted.is_(None)))
 
-@router.get(
-    "/rooms/{room_id}",
-    response_model=schemas.TodoListResponse,
-    summary="팀 Todo 목록 조회"
-)
+    if status_filter:
+        query = query.filter(Todo.status == status_filter)
+
+    todos = query.order_by(Todo.sort_order.asc(), Todo.created_at.asc()).all()
+
+    return {"success": True, "todos": todos}
+
+@router.get("/rooms/{room_id}", response_model=TodoListResponse)
 def get_room_todos(
     room_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    include_archived: bool = Query(False),
+    include_deleted: bool = Query(False),
+    assignee_user_id: Optional[int] = Query(None),
+    status_filter: Optional[str] = Query(None),
 ):
     room = db.query(Room).filter(Room.id == room_id).first()
-    if room is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="해당 room이 존재하지 않습니다."
-        )
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
 
-    todos = (
-        db.query(Todo)
-        .filter(
-            Todo.room_id == room_id,
-            (Todo.deleted == False) | (Todo.deleted.is_(None))
-        )
-        .order_by(Todo.created_at.desc())
-        .all()
-    )
+    query = db.query(Todo).filter(Todo.room_id == room_id)
 
-    return schemas.TodoListResponse(
-        success=True,
-        todos=todos,
-    )
+    if not include_archived:
+        query = query.filter((Todo.archived.is_(False)) | (Todo.archived.is_(None)))
 
+    if not include_deleted:
+        query = query.filter((Todo.deleted.is_(False)) | (Todo.deleted.is_(None)))
 
-@router.put(
-    "/{todo_id}",
-    response_model=schemas.TodoResponse,
-    summary="Todo 수정"
-)
-def update_todo(
+    if assignee_user_id is not None:
+        query = query.filter(Todo.assignee_user_id == assignee_user_id)
+
+    if status_filter:
+        query = query.filter(Todo.status == status_filter)
+
+    todos = query.order_by(Todo.sort_order.asc(), Todo.created_at.asc()).all()
+
+    return {"success": True, "todos": todos}
+
+@router.get("/{todo_id}", response_model=TodoSingleResponse)
+def get_todo(
     todo_id: int,
-    request: schemas.TodoUpdateRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     todo = db.query(Todo).filter(Todo.id == todo_id).first()
-    if todo is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="해당 todo가 존재하지 않습니다."
-        )
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
 
-    if request.assignee_user_id is not None:
-        assignee = db.query(User).filter(User.id == request.assignee_user_id).first()
-        if assignee is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="assignee_user_id에 해당하는 사용자가 존재하지 않습니다."
-            )
-        todo.assignee_user_id = request.assignee_user_id
+    return {"success": True, "todo": todo}
 
-    if request.title is not None:
-        todo.title = request.title
+@router.patch("/{todo_id}", response_model=TodoSingleResponse)
+def update_todo(
+    todo_id: int,
+    request: TodoUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    todo = db.query(Todo).filter(Todo.id == todo_id).first()
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
 
-    if request.description is not None:
-        todo.description = request.description
+    update_data = request.model_dump(exclude_unset=True)
 
-    if request.status is not None:
-        todo.status = request.status
+    if "assignee_user_id" in update_data and update_data["assignee_user_id"] is not None:
+        assignee = db.query(User).filter(User.id == update_data["assignee_user_id"]).first()
+        if not assignee:
+            raise HTTPException(status_code=404, detail="Assignee user not found")
 
-    if request.success_flag is not None:
-        todo.success_flag = request.success_flag
+    for field, value in update_data.items():
+        setattr(todo, field, value)
 
-    if request.progress_percent is not None:
-        if request.progress_percent < 0 or request.progress_percent > 100:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="progress_percent는 0 이상 100 이하여야 합니다."
-            )
-        todo.progress_percent = request.progress_percent
-
-    if request.priority is not None:
-        todo.priority = request.priority
-
-    if request.category is not None:
-        todo.category = request.category
-
-    if request.tag is not None:
-        todo.tag = request.tag
-
-    if request.start_date is not None:
-        todo.start_date = request.start_date
-
-    if request.due_date is not None:
-        todo.due_date = request.due_date
-
-    if request.completed_at is not None:
-        todo.completed_at = request.completed_at
-
-    if request.estimated_minutes is not None:
-        todo.estimated_minutes = request.estimated_minutes
-
-    if request.actual_minutes is not None:
-        todo.actual_minutes = request.actual_minutes
-
-    if request.visibility is not None:
-        todo.visibility = request.visibility
-
-    if request.source_type is not None:
-        todo.source_type = request.source_type
-
-    if request.ai_suggested is not None:
-        todo.ai_suggested = request.ai_suggested
-
-    if request.sort_order is not None:
-        todo.sort_order = request.sort_order
-
-    if request.archived is not None:
-        todo.archived = request.archived
-
-    if request.deleted is not None:
-        todo.deleted = request.deleted
+    apply_status_side_effects(todo)
 
     db.commit()
     db.refresh(todo)
 
-    return todo
+    return {"success": True, "todo": todo}
 
-@router.delete(
-    "/{todo_id}",
-    response_model=schemas.SimpleSuccessResponse,
-    summary="Todo 삭제(소프트 삭제)"
-)
+@router.delete("/{todo_id}", response_model=MessageResponse)
 def delete_todo(
     todo_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     todo = db.query(Todo).filter(Todo.id == todo_id).first()
-    if todo is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="해당 todo가 존재하지 않습니다."
-        )
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
 
     todo.deleted = True
     db.commit()
 
-    return schemas.SimpleSuccessResponse(
-        success=True,
-        message="Todo가 삭제되었습니다."
-    )
-@router.patch(
-    "/{todo_id}/status",
-    response_model=schemas.TodoResponse,
-    summary="Todo 상태 변경"
-)
+    return {"success": True, "message": "Todo deleted successfully"}
+
+@router.patch("/{todo_id}/status", response_model=TodoSingleResponse)
 def update_todo_status(
     todo_id: int,
-    request: schemas.TodoStatusUpdateRequest,
+    request: TodoStatusUpdateRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     todo = db.query(Todo).filter(Todo.id == todo_id).first()
-    if todo is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="해당 todo가 존재하지 않습니다."
-        )
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
 
     todo.status = request.status
 
     if request.progress_percent is not None:
-        if request.progress_percent < 0 or request.progress_percent > 100:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="progress_percent는 0 이상 100 이하여야 합니다."
-            )
         todo.progress_percent = request.progress_percent
 
     if request.success_flag is not None:
         todo.success_flag = request.success_flag
 
-    if request.status == "DONE":
-        if todo.completed_at is None:
-            from datetime import datetime
-            todo.completed_at = datetime.now()
-        if todo.progress_percent is None:
-            todo.progress_percent = 100
-    else:
-        # 필요하면 DONE이 아닐 때 completed_at 유지/초기화 정책 선택 가능
-        pass
+    apply_status_side_effects(todo)
 
     db.commit()
     db.refresh(todo)
 
-    return todo
+    return {"success": True, "todo": todo}
+
+@router.patch("/{todo_id}/order", response_model=TodoSingleResponse)
+def update_todo_order(
+    todo_id: int,
+    sort_order: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    todo = db.query(Todo).filter(Todo.id == todo_id).first()
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
+
+    todo.sort_order = sort_order
+    db.commit()
+    db.refresh(todo)
+
+    return {"success": True, "todo": todo}
+
+@router.patch("/rooms/{room_id}/reorder", response_model=MessageResponse)
+def reorder_room_todos(
+    room_id: int,
+    request: TodoReorderRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    room = db.query(Room).filter(Room.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    todo_ids = [item.todo_id for item in request.items]
+    todos = db.query(Todo).filter(Todo.room_id == room_id, Todo.id.in_(todo_ids)).all()
+    todo_map = {todo.id: todo for todo in todos}
+
+    if len(todos) != len(todo_ids):
+        raise HTTPException(status_code=400, detail="Some todos do not belong to this room")
+
+    for item in request.items:
+        todo_map[item.todo_id].sort_order = item.sort_order
+
+    db.commit()
+
+    return {"success": True, "message": "Todo order updated successfully"}
