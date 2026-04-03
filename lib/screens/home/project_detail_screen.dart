@@ -479,26 +479,42 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final role = roles[roleIndex];
     final task = role.tasks[taskIndex];
 
+    // 1. 먼저 UI에서 즉시 제거
+    final updatedRoles = [...roles];
+    final updatedTasks = [...role.tasks]..removeAt(taskIndex);
+    updatedRoles[roleIndex] = role.copyWith(tasks: updatedTasks);
+
+    if (!mounted) return;
+    setState(() {
+      project = project.copyWith(roles: updatedRoles);
+      _refreshAllRoleStatuses();
+    });
+
     try {
+      // 2. 그다음 서버 반영
       await widget.service.deleteTask(
         projectNumber: project.projectNumber,
         roleId: role.id,
         taskId: task.id,
       );
+
+      // 필요하면 서버 기준 최신 데이터 다시 동기화
       await _reloadProject();
+
       _showSuccessSnackBar('${task.title} 업무를 삭제했어요.');
-    } on UnsupportedError {
-      final updatedRoles = [...roles];
-      final updatedTasks = [...role.tasks]..removeAt(taskIndex);
-      updatedRoles[roleIndex] = role.copyWith(tasks: updatedTasks);
+    } catch (e) {
+      // 3. 실패하면 롤백
+      final rollbackRoles = [...roles];
+      final rollbackTasks = [...updatedRoles[roleIndex].tasks];
+      rollbackTasks.insert(taskIndex, task);
+      rollbackRoles[roleIndex] = role.copyWith(tasks: rollbackTasks);
 
       if (!mounted) return;
       setState(() {
-        project = project.copyWith(roles: updatedRoles);
+        project = project.copyWith(roles: rollbackRoles);
         _refreshAllRoleStatuses();
       });
-      _showSuccessSnackBar('${task.title} 업무를 삭제했어요.');
-    } catch (e) {
+
       _showErrorSnackBar('업무 삭제에 실패했어요.');
     }
   }
@@ -4096,9 +4112,8 @@ class _RolesTab extends StatelessWidget {
                               direction: DismissDirection.endToStart,
                               background: Container(
                                 alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 20),
                                 decoration: BoxDecoration(
                                   color: Colors.red,
                                   borderRadius: BorderRadius.circular(18),
@@ -4109,7 +4124,7 @@ class _RolesTab extends StatelessWidget {
                                 ),
                               ),
                               confirmDismiss: (_) async {
-                                return await showDialog<bool>(
+                                final shouldDelete = await showDialog<bool>(
                                       context: context,
                                       builder: (context) {
                                         return AlertDialog(
@@ -4131,9 +4146,13 @@ class _RolesTab extends StatelessWidget {
                                       },
                                     ) ??
                                     false;
+
+                                if (!shouldDelete) return false;
+
+                                await onDeleteTask(realRoleIndex, taskIndex);
+                                return true;
                               },
-                              onDismissed: (_) =>
-                                  onDeleteTask(realRoleIndex, taskIndex),
+                              onDismissed: (_) {},
                               child: _TaskTile(
                                 task: task,
                                 onTap: () =>
