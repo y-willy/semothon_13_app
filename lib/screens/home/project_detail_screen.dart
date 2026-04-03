@@ -3957,29 +3957,41 @@ class _AiCoachCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: const Color(0xFFEEDDF8),
-                child: Icon(
-                  Icons.smart_toy_outlined,
-                  color: _ProjectDetailScreenState.kPurple,
-                  size: 18,
-                ),
-              ),
-              SizedBox(width: 10),
-              Text(
-                'AI 코치 분석',
-                style: TextStyle(
-                  color: Color(0xFF5A2B7A),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
+          Row(
+  children: [
+    Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFFE0E0E0),
+          width: 1.2,
+        ),
+      ),
+      child: ClipOval(
+        child: Padding(
+          padding: const EdgeInsets.all(3),
+          child: Image.asset(
+            'assets/images/happyface.png',
+            fit: BoxFit.cover,
           ),
-          const SizedBox(height: 14),
+        ),
+      ),
+    ),
+    const SizedBox(width: 10),
+    const Text(
+      'AI 쿠옹 코치 분석',
+      style: TextStyle(
+        color: Color(0xFF3A2A2A),
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+      ),
+    ),
+  ],
+),
+                const SizedBox(height: 14),
           _AiHintBox(
             backgroundColor: const Color(0xFFEFF4FF),
             textColor: _ProjectDetailScreenState.kBlue,
