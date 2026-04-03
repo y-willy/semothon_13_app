@@ -2,11 +2,13 @@ class MemberModel {
   final int id;
   final String name;
   final String studentId;
+  final String username;
 
   const MemberModel({
     required this.id,
     required this.name,
     required this.studentId,
+    this.username = '',
   });
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
@@ -18,6 +20,7 @@ class MemberModel {
       studentId: _toString(
         json['studentId'] ?? json['student_id'] ?? json['username'],
       ),
+      username: _toString(json['username'] ?? ''),
     );
   }
 
@@ -25,11 +28,13 @@ class MemberModel {
     int? id,
     String? name,
     String? studentId,
+    String? username,
   }) {
     return MemberModel(
       id: id ?? this.id,
       name: name ?? this.name,
       studentId: studentId ?? this.studentId,
+      username: username ?? this.username,
     );
   }
 
@@ -38,6 +43,7 @@ class MemberModel {
       'id': id,
       'name': name,
       'studentId': studentId,
+      'username': username,
     };
   }
 
