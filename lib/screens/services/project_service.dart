@@ -4,14 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/project_detail_model.dart';
+import '../models/chat_message_model.dart';
 
 class ProjectService {
   final String baseUrl;
   final http.Client client;
 
   String? _accessToken;
+  int? _currentUserId;
 
   String? get accessToken => _accessToken;
+  int? get currentUserId => _currentUserId;
+
 
   ProjectService({
     required this.baseUrl,
@@ -26,6 +30,10 @@ class ProjectService {
 
   void clearAccessToken() {
     _accessToken = null;
+  }
+
+  void setCurrentUserId(int id) {
+    _currentUserId = id;
   }
 
   Map<String, String> get _headers {
@@ -73,7 +81,7 @@ class ProjectService {
         'chatMessages': const [],
         'notifications': const [],
         'isMock': false,
-      });
+      },_currentUserId ?? -1);
     }).toList();
   }
 
@@ -103,7 +111,7 @@ class ProjectService {
       'notifications': const [],
       'inviteCode': data['invite_code'] ?? '',
       'isMock': false,
-    });
+    },_currentUserId ?? -1);
   }
 
   Future<ProjectDetailModel> createProject({
@@ -135,7 +143,7 @@ class ProjectService {
       'chatMessages': const [],
       'notifications': const [],
       'isMock': false,
-    });
+    },_currentUserId ?? -1);
   }
 
   // =========================
@@ -298,21 +306,121 @@ class ProjectService {
     throw UnsupportedError('업무 삭제 API 없음');
   }
 
+
   Future<void> sendChat({
     required String projectNumber,
     required String message,
     required bool isFile,
   }) async {
-    throw UnsupportedError('채팅 API 없음');
+    if (_accessToken == null || _accessToken!.isEmpty) {
+      throw Exception('로그인이 필요합니다. access token이 없습니다.');
+    }
+
+    final roomId = projectNumber.trim();
+
+    if (roomId.isEmpty) {
+      throw Exception('room id가 비어 있습니다.');
+    }
+
+    if (message.trim().isEmpty) {
+      throw Exception('메시지 내용이 비어 있습니다.');
+    }
+
+    final uri = Uri.parse('$baseUrl/chat/rooms/$roomId/messages');
+
+    final body = {
+      'message_type': isFile ? 'FILE' : 'TEXT',
+      'content': message.trim(),
+    };
+
+    final response = await client.post(
+      uri,
+      headers: _headers,
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return;
+    }
+
+    String errorMessage = '채팅 전송에 실패했습니다. (${response.statusCode})';
+
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        errorMessage = decoded['detail']?.toString() ??
+            decoded['message']?.toString() ??
+            errorMessage;
+      }
+    } catch (_) {}
+
+    throw Exception(errorMessage);
+  }
+  Future<List<ChatMessageModel>> fetchChatMessages({
+    required String projectNumber,
+  }) async {
+    if (_accessToken == null || _accessToken!.isEmpty) {
+      throw Exception('로그인이 필요합니다. access token이 없습니다.');
+    }
+
+    final roomId = projectNumber.trim();
+
+    if (roomId.isEmpty) {
+      throw Exception('room id가 비어 있습니다.');
+    }
+
+    final uri = Uri.parse('$baseUrl/chat/rooms/$roomId/messages');
+
+    final response = await client.get(
+      uri,
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      String errorMessage = '채팅 목록 조회에 실패했습니다. (${response.statusCode})';
+
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          errorMessage =
+              decoded['detail']?.toString() ??
+                  decoded['message']?.toString() ??
+                  errorMessage;
+        }
+      } catch (_) {}
+
+      throw Exception(errorMessage);
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('채팅 목록 응답 형식이 올바르지 않습니다. Map이 아닙니다.');
+    }
+
+    final rawMessages = decoded['messages'];
+
+    if (rawMessages is! List) {
+      throw Exception('채팅 목록 응답 형식이 올바르지 않습니다. messages가 List가 아닙니다.');
+    }
+
+    final currentUserId = _currentUserId ?? -1;
+
+    return rawMessages.map<ChatMessageModel>((item) {
+      return ChatMessageModel.fromJson(
+        item as Map<String, dynamic>,
+        currentUserId,
+      );
+    }).toList();
+  }
+  Future<void> readAllChat(String projectNumber) async {
+    throw UnsupportedError('채팅 읽음 API 없음');
   }
 
   Future<void> readAllNotifications(String projectNumber) async {
     throw UnsupportedError('알림 API 없음');
   }
 
-  Future<void> readAllChat(String projectNumber) async {
-    throw UnsupportedError('채팅 읽음 API 없음');
-  }
 
   // =========================
   // 공통

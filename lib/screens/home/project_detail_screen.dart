@@ -74,6 +74,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     _refreshAllRoleStatuses();
     _loadProjectDetail(showLoading: false);
 
+    _loadMessages();
+
     chatFocusNode.addListener(() {
       if (!mounted) return;
       setState(() {});
@@ -91,7 +93,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   List<MemberModel> get members => project.members;
   List<ScheduleModel> get schedules => project.schedules;
   List<RoleModel> get roles => project.roles;
-  List<ChatMessageModel> get chatMessages => project.chatMessages;
+  List<ChatMessageModel> _messages = [];
   List<AppNotificationModel> get notifications => project.notifications;
 
   int _maxBy<T>(List<T> items, int Function(T) pick) {
@@ -113,7 +115,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return maxId + 1;
   }
 
-  int _nextChatId() => _maxBy(chatMessages, (item) => item.id) + 1;
+  int _nextChatId() => _maxBy(_messages, (item) => item.id) + 1;
 
   String _nowLabel() {
     final now = TimeOfDay.now();
@@ -277,8 +279,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return items;
   }
 
+
   List<ChatMessageModel> get fileMessages {
-    return chatMessages
+    return _messages
         .where((message) => message.isFile)
         .toList()
         .reversed
@@ -286,7 +289,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   int get unreadChatCount {
-    return chatMessages
+    return _messages
         .where((message) => message.sender != '나' && !message.isRead)
         .length;
   }
@@ -380,7 +383,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       await widget.service.readAllChat(project.projectNumber);
       await _reloadProject();
     } on UnsupportedError {
-      final updated = chatMessages.map((message) {
+      final updated = _messages.map((message) {
         if (message.sender == '나' || message.isRead) return message;
         return message.copyWith(isRead: true);
       }).toList();
@@ -484,11 +487,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         isFile: false,
       );
       chatController.clear();
+      await _loadMessages();
       await _reloadProject();
       _scrollChatToBottom();
     } on UnsupportedError {
       final updated = [
-        ...chatMessages,
+        ..._messages,
         ChatMessageModel(
           id: _nextChatId(),
           sender: '나',
@@ -516,7 +520,26 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       });
     }
   }
-
+  Future<void> _loadMessages() async {
+    try {
+      final messages = await widget.service.fetchChatMessages(
+        projectNumber: widget.project.projectNumber,
+      );
+      print("loadMessages activated");
+      if (!mounted) return;
+      setState(() {
+        _messages = messages;
+        _isLoading = false;
+        print(messages);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      print('error occured');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
   Future<void> _sendAttachmentMessage(String message) async {
     try {
       await widget.service.sendChat(
@@ -528,7 +551,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       _scrollChatToBottom();
     } on UnsupportedError {
       final updated = [
-        ...chatMessages,
+        ..._messages,
         ChatMessageModel(
           id: _nextChatId(),
           sender: '나',
@@ -2543,7 +2566,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         return Padding(
           padding: const EdgeInsets.fromLTRB(18, 20, 18, 12),
           child: _ChatTab(
-            messages: chatMessages,
+            messages: _messages,
             controller: chatController,
             focusNode: chatFocusNode,
             scrollController: chatScrollController,
@@ -3541,7 +3564,6 @@ class _ChatTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Column(
@@ -4341,7 +4363,7 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMine = message.sender == '나';
+    final bool isMine = message.isMe;
     final bool isAi = message.isAi;
 
     final Color bubbleColor = isMine

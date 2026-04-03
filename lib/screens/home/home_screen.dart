@@ -15,11 +15,13 @@ import 'widgets/project_badge_section.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? userName;
+  final int? userId;
   final AuthService authService;
   final ProjectService projectService;
 
   const HomeScreen({
     super.key,
+    this.userId,
     this.userName,
     required this.authService,
     required this.projectService,
