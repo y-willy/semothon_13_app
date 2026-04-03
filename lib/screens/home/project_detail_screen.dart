@@ -475,48 +475,50 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     }
   }
 
-  Future<void> deleteTask(int roleIndex, int taskIndex) async {
-    final role = roles[roleIndex];
+  void deleteTask(int roleIndex, int taskIndex) {
+    final currentRoles = project.roles;
+
+    if (roleIndex < 0 || roleIndex >= currentRoles.length) return;
+
+    final role = currentRoles[roleIndex];
+    if (taskIndex < 0 || taskIndex >= role.tasks.length) return;
+
     final task = role.tasks[taskIndex];
+    final originalProject = project;
 
     // 1. 먼저 UI에서 즉시 제거
-    final updatedRoles = [...roles];
+    final updatedRoles = [...currentRoles];
     final updatedTasks = [...role.tasks]..removeAt(taskIndex);
     updatedRoles[roleIndex] = role.copyWith(tasks: updatedTasks);
 
-    if (!mounted) return;
     setState(() {
       project = project.copyWith(roles: updatedRoles);
       _refreshAllRoleStatuses();
     });
 
-    try {
-      // 2. 그다음 서버 반영
-      await widget.service.deleteTask(
-        projectNumber: project.projectNumber,
-        roleId: role.id,
-        taskId: task.id,
-      );
+    // 2. 서버 삭제는 뒤에서 비동기로
+    () async {
+      try {
+        await widget.service.deleteTask(
+          projectNumber: project.projectNumber,
+          roleId: role.id,
+          taskId: task.id,
+        );
 
-      // 필요하면 서버 기준 최신 데이터 다시 동기화
-      await _reloadProject();
-
-      _showSuccessSnackBar('${task.title} 업무를 삭제했어요.');
-    } catch (e) {
-      // 3. 실패하면 롤백
-      final rollbackRoles = [...roles];
-      final rollbackTasks = [...updatedRoles[roleIndex].tasks];
-      rollbackTasks.insert(taskIndex, task);
-      rollbackRoles[roleIndex] = role.copyWith(tasks: rollbackTasks);
-
-      if (!mounted) return;
-      setState(() {
-        project = project.copyWith(roles: rollbackRoles);
-        _refreshAllRoleStatuses();
-      });
-
-      _showErrorSnackBar('업무 삭제에 실패했어요.');
-    }
+        if (!mounted) return;
+        _showSuccessSnackBar('${task.title} 업무를 삭제했어요.');
+      } on UnsupportedError {
+        if (!mounted) return;
+        _showSuccessSnackBar('${task.title} 업무를 삭제했어요.');
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          project = originalProject;
+          _refreshAllRoleStatuses();
+        });
+        _showErrorSnackBar('업무 삭제에 실패했어요.');
+      }
+    }();
   }
 
   Future<void> sendChatMessage() async {
@@ -3608,7 +3610,7 @@ class _RolesTab extends StatelessWidget {
   final Future<void> Function(int) onAddTask;
   final Future<void> Function(int, int) onEditDeadline;
   final Future<void> Function(int) onAutoGenerate;
-  final Future<void> Function(int, int) onDeleteTask;
+  final void Function(int, int) onDeleteTask;
   final Color Function(String) statusColor;
   final int Function(RoleModel) completedTaskCount;
   final int Function(RoleModel) totalTaskCount;
@@ -4124,7 +4126,7 @@ class _RolesTab extends StatelessWidget {
                                 ),
                               ),
                               confirmDismiss: (_) async {
-                                final shouldDelete = await showDialog<bool>(
+                                return await showDialog<bool>(
                                       context: context,
                                       builder: (context) {
                                         return AlertDialog(
@@ -4146,13 +4148,10 @@ class _RolesTab extends StatelessWidget {
                                       },
                                     ) ??
                                     false;
-
-                                if (!shouldDelete) return false;
-
-                                await onDeleteTask(realRoleIndex, taskIndex);
-                                return true;
                               },
-                              onDismissed: (_) {},
+                              onDismissed: (_) {
+                                onDeleteTask(realRoleIndex, taskIndex);
+                              },
                               child: _TaskTile(
                                 task: task,
                                 onTap: () =>
