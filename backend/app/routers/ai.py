@@ -746,33 +746,7 @@ def distribute_tasks(
             detail=f"일부 팀원에게 태스크가 배정되지 않았습니다. (미배정 ID: {sorted(unassigned)})",
         )
 
-    # 6) DB 저장
-    try:
-        task_objects: List[models.Task] = [
-            models.Task(
-                room_id=request.room_id,
-                assigned_user_id=t["assigned_user_id"],
-                title=t["title"],
-                description=t["description"],
-                priority=t["priority"],
-                due_date=to_utc(request.deadline),   # None이면 None 저장 (안전)
-                created_by="AI",
-                status="TODO",
-                progress_percent=0,
-            )
-            for t in validated_tasks
-        ]
 
-        db.add_all(task_objects)
-        # 각 팀원이 배정받은 태스크의 title을 프로필에 기록합니다.
-        for t in validated_tasks:
-            user_profile = (
-                db.query(models.UserProfile)
-                .filter(models.UserProfile.user_id == t["assigned_user_id"])
-                .first()
-            )
-            if user_profile:
-                user_profile.distributed = t["title"]
                 
         db.flush()
         db.commit()
