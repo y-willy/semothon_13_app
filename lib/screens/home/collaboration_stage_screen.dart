@@ -182,69 +182,128 @@ class _CollaborationStageScreenState
   }
 
   Widget _buildProgressCard() {
-    final progressPercent = (_projectProgress * 100).round();
+  final progressPercent = (_projectProgress * 100).round();
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-      decoration: BoxDecoration(
-        color: kCard,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kBorder),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10A31621),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '프로젝트 진행률',
-            style: TextStyle(
-              color: kText,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '$progressPercent%',
-              style: const TextStyle(
-                color: kPrimary,
-                fontSize: 30,
-                fontWeight: FontWeight.w700,
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+    decoration: BoxDecoration(
+      color: kCard,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: kBorder),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x10A31621),
+          blurRadius: 10,
+          offset: Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                ' To do list',
+                style: TextStyle(
+                  color: kText,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              minHeight: 9,
-              value: _projectProgress,
-              backgroundColor: const Color(0xFFE7D1D1),
-              valueColor: const AlwaysStoppedAnimation(kPrimary),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEFEF),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '$progressPercent%',
+                style: const TextStyle(
+                  color: kPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        ..._tasks.map(
+          (task) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: Icon(
+                    task.status == '완료'
+                        ? Icons.check_circle_rounded
+                        : task.status == '진행중'
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                    size: 20,
+                    color: task.status == '완료'
+                        ? kMint
+                        : task.status == '진행중'
+                            ? kPrimary
+                            : const Color(0xFFB8A9A9),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        style: TextStyle(
+                          color: kText,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          decoration: task.status == '완료'
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                          decorationColor: const Color(0xFF9E8C8C),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${task.assignee} · ${task.dueDate}',
+                        style: const TextStyle(
+                          color: kSubText,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buildStatusChip(task.status),
+              ],
             ),
           ),
-          const SizedBox(height: 18),
-          Text(
-            '$_completedCount / ${_tasks.length} 작업 완료',
-            style: const TextStyle(
-              color: kText,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+        ),
+
+        const SizedBox(height: 4),
+        Text(
+          '총 ${_tasks.length}개 중 $_completedCount개 완료',
+          style: const TextStyle(
+            color: kSubText,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildTabBar() {
     const tabs = [
