@@ -602,6 +602,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       });
       _scrollChatToBottom();
     } catch (e) {
+      print(e);
       _showErrorSnackBar('파일 공유에 실패했어요.');
     }
   }
