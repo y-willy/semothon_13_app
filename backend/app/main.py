@@ -2,6 +2,9 @@ from fastapi import FastAPI, APIRouter
 from app.database import test_db_connection
 from .schemas import DBCheckResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Depends
+from app.database import get_db
+from sqlalchemy.orm import Session
 
 from app.routers import auth, files, rooms, profile, schedules, task, ai, chat, todos
 from app.database import Base, engine
