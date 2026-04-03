@@ -93,8 +93,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     switch (stageIndex) {
       case 0:
-        screen = const IcebreakingStageScreen();
-        break;
+  screen = IcebreakingStageScreen(
+    project: widget.project,
+    service: widget.service,
+  );
+  break;
       case 1:
         screen = const TopicSelectionStageScreen();
         break;

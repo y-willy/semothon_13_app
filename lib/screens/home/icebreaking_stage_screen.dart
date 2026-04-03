@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import '../models/project_detail_model.dart';
+import '../services/project_service.dart';
+import 'project_detail_screen.dart';
+import 'topic_selection_stage_screen.dart';
 
 class IcebreakingStageScreen extends StatefulWidget {
-  const IcebreakingStageScreen({super.key});
+  final ProjectDetailModel project;
+  final ProjectService service;
+
+  const IcebreakingStageScreen({
+    super.key,
+    required this.project,
+    required this.service,
+  });
 
   @override
   State<IcebreakingStageScreen> createState() => _IcebreakingStageScreenState();
@@ -669,28 +680,76 @@ class _IcebreakingStageScreenState extends State<IcebreakingStageScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _restartSession,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kWine,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                '다시 시작하기',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+Row(
+  children: [
+    Expanded(
+      child: SizedBox(
+        height: 52,
+        child: OutlinedButton(
+        onPressed: () {
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ProjectDetailScreen(
+        project: widget.project,
+        service: widget.service,
+      ),
+    ),
+    (route) => false,
+  );
+},
+        
+          style: OutlinedButton.styleFrom(
+            foregroundColor: kText,
+            backgroundColor: Colors.white,
+            side: const BorderSide(color: kBorder),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
           ),
+          child: const Text(
+            '돌아가기',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    ),
+    const SizedBox(width: 12),
+    Expanded(
+      child: SizedBox(
+        height: 52,
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const TopicSelectionStageScreen(),
+              ),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: kWine,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          child: const Text(
+            '주제선정 가기',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    ),
+  ],
+),
         ],
       ),
     );
